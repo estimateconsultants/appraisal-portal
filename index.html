@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Appraisal Client Portal</title>
+    
+    <!-- PWA & Mobile Engine Configurations -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EC Appraisals">
+    <link rel="apple-touch-icon" href="logo.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: '#2563eb',
+                            blueHover: '#1d4ed8',
+                            gold: '#d97706',
+                            goldHover: '#b45309',
+                            dark: '#0f172a',
+                            card: '#ffffff'
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Cinzel', 'serif'],
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        input, textarea, button, div, select { transition: all 0.15s ease-in-out; }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .blue-gradient-text {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(37, 99, 235, 0.25); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(37, 99, 235, 0.5); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-brand-blue selection:text-white min-h-screen flex flex-col">
+
+    <!-- TOP COVERAGE BANNER (matches main site) -->
+    <div class="bg-white border-b border-slate-200 text-[11px] text-slate-700 py-2 px-4 text-center">
+        <p><i class="fa-solid fa-lock text-blue-400 mr-1"></i> Secure Client Portal — Estimate Consultants</p>
+    </div>
+
+    <!-- MAIN HEADER (matches main site) -->
+    <header class="sticky top-0 z-40 glass-header">
+        <div class="max-w-md mx-auto px-4 h-16 flex items-center justify-center gap-3">
+            <img src="logo.png" alt="Estimate Consultants Logo" class="h-9 w-auto object-contain" onerror="this.style.display='none'">
+            <div class="text-center">
+                <span class="block text-sm font-bold font-serif tracking-wider text-slate-900 uppercase leading-tight">Estimate Consultants</span>
+                <span class="block text-[9px] text-slate-500 uppercase tracking-widest font-semibold">Client Appraisal Portal</span>
+            </div>
+        </div>
+    </header>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <main class="flex-1 flex flex-col items-center p-4 relative">
+
+        <!-- MAIN INTERFACE PANEL -->
+        <div class="w-full max-w-md bg-white border border-slate-200 p-6 sm:p-8 rounded-2xl shadow-xl shadow-slate-200/60 flex flex-col items-center relative z-10 mt-4">
+        
+        <!-- PWA INSTALL PROMPT BANNER (DISMISSABLE WITH COOLDOWN) -->
+        <div id="pwaInstallBanner" class="hidden mb-4 w-full bg-blue-50 border border-blue-200 p-3 rounded-xl flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <span class="text-base">📱</span>
+                <span class="text-xs font-bold text-brand-blue">Install Portal App</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button type="button" id="pwaInstallBtn" class="bg-brand-blue hover:bg-brand-blueHover text-white font-black text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg transition">Install</button>
+                <button type="button" id="pwaDismissBtn" class="text-slate-400 hover:text-slate-700 text-xs px-2 py-1 font-bold rounded-lg transition" title="Dismiss">✕</button>
+            </div>
+        </div>
+
+        <h1 class="text-lg font-black font-serif uppercase tracking-wider text-slate-900 text-center mb-4">Your Appraisal Portal</h1>
+
+        <!-- 🛡️ TRUST BANNER -->
+        <div class="mb-5 w-full bg-gradient-to-br from-amber-50 to-white border border-amber-200 p-3.5 rounded-xl shadow-sm text-center space-y-1.5">
+            <div class="flex items-center justify-center space-x-2">
+                <span class="text-[10px] font-black bg-amber-100/90 text-brand-gold border border-amber-200 px-2.5 py-0.5 rounded-full uppercase tracking-widest">Independent Vehicle Appraisals</span>
+            </div>
+            <p class="text-xs font-semibold text-slate-700 leading-snug">
+                <i class="fa-solid fa-bullseye text-brand-gold mr-1"></i> <strong class="text-brand-gold font-extrabold">Unrivaled Accuracy:</strong> Every appraisal is built on our proprietary valuation formula and real-time market data, calculated specifically for your vehicle's exact VIN.
+            </p>
+            <p class="text-[11px] font-medium text-slate-500 leading-snug pt-1.5 mt-1.5 border-t border-amber-200/60">
+                <i class="fa-solid fa-comments text-brand-blue mr-1"></i> 100% online from start to finish — and a real person is always just a message away if you need us.
+            </p>
+        </div>
+
+        <!-- SCREEN 1: LOGIN & REGISTRATION GATEWAY -->
+        <div id="verificationScreen" class="w-full space-y-4">
+            
+            <!-- STEP 1: Phone Lookup -->
+            <div id="phoneStep" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-brand-blue tracking-widest mb-1.5 pl-1">Your Phone Number</label>
+                    <input type="tel" id="verificationPhone" placeholder="(555) 555-5555" maxlength="14" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-center text-lg font-bold tracking-wide focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue shadow-inner placeholder:text-slate-400">
+                    <p class="text-[11px] text-slate-500 mt-3 text-center font-normal tracking-wide leading-relaxed px-2">By entering your number, you agree to text updates and messages. Msg and data rates may apply.</p>
+                </div>
+
+                <!-- ⚡ AUTO-LOGIN LOADING BAR PANEL -->
+                <div id="autoLoginProgressContainer" class="hidden w-full bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                            <span class="text-xs font-bold text-slate-700 tracking-wide uppercase">Logging In, Please Wait...</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-white h-2 rounded-full overflow-hidden border border-slate-200">
+                        <div id="autoLoginProgressBar" class="bg-gradient-to-r from-brand-blue to-blue-400 h-full w-0 transition-all duration-150 ease-out"></div>
+                    </div>
+                </div>
+
+                <button type="button" id="verifyPhoneBtn" class="w-full bg-brand-blue hover:bg-brand-blueHover active:scale-[0.98] text-white font-black uppercase tracking-wider p-4 rounded-xl shadow-md shadow-blue-500/20">Continue</button>
+            </div>
+
+            <!-- STEP 2A: Existing Shop Login Form -->
+            <div id="existingShopContainer" class="hidden space-y-4">
+                <div class="bg-slate-50 p-3 rounded-xl text-center border border-blue-200">
+                    <p id="welcomeShopName" class="text-xs font-black text-brand-blue uppercase tracking-widest"></p>
+                </div>
+
+                <div>
+                    <label id="loginLabel" class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1.5 pl-1">Account PIN</label>
+                    <input type="password" id="loginPassword" placeholder="••••" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-center text-xl tracking-widest focus:outline-none focus:border-brand-blue">
+                </div>
+
+                <!-- 🔑 REMEMBER ME CHECKBOX -->
+                <div class="flex items-center justify-between px-1">
+                    <label class="flex items-center space-x-2 cursor-pointer select-none">
+                        <input type="checkbox" id="rememberMe" checked class="w-4 h-4 rounded bg-white border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
+                        <span class="text-xs text-slate-500 font-bold uppercase tracking-wide">Remember Me</span>
+                    </label>
+                </div>
+
+                <button type="button" id="loginBtn" class="w-full bg-brand-blue hover:bg-brand-blueHover active:scale-[0.98] text-white font-black uppercase tracking-wider p-4 rounded-xl shadow-md shadow-blue-500/20">Log In</button>
+
+                <div class="grid grid-cols-2 gap-x-2 gap-y-3 text-center border-t border-slate-200 pt-4">
+                    <button type="button" id="otpRequestBtn" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide truncate text-left pl-1">📧 Email Code</button>
+                    <button type="button" id="otpSmsRequestBtn" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide truncate text-right pr-1">💬 Text Code</button>
+                    <button type="button" id="forgotBtn" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide truncate text-left pl-1">🔑 Forgot PIN?</button>
+                    <button type="button" id="backToPhoneBtn1" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide truncate text-right pr-1">← Change Phone</button>
+                </div>
+            </div>
+            
+            <!-- STEP 2B: New Customer Registration Form -->
+            <div id="newShopContainer" class="hidden space-y-4 pt-2">
+                <div class="bg-blue-50 border border-blue-200 p-2.5 rounded-xl text-center">
+                    <p id="regHeaderTitle" class="text-[11px] font-bold text-brand-blue uppercase tracking-wider">Complete Account Registration</p>
+                </div>
+
+                <div class="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Full Name</label>
+                        <input type="text" id="newShopName" placeholder="e.g., Jane Smith" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-brand-blue">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Vehicle</label>
+                        <input type="hidden" id="newShopContact">
+                        <div class="grid grid-cols-3 gap-2">
+                            <select id="regVehicleYear" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue cursor-pointer">
+                                <option value="">Year</option>
+                            </select>
+                            <select id="regVehicleMake" class="col-span-2 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue cursor-pointer">
+                                <option value="">Make</option>
+                                <option value="Acura">Acura</option><option value="Alfa Romeo">Alfa Romeo</option><option value="Audi">Audi</option><option value="BMW">BMW</option><option value="Buick">Buick</option><option value="Cadillac">Cadillac</option><option value="Chevrolet">Chevrolet</option><option value="Chrysler">Chrysler</option><option value="Dodge">Dodge</option><option value="FIAT">FIAT</option><option value="Ford">Ford</option><option value="Genesis">Genesis</option><option value="GMC">GMC</option><option value="Honda">Honda</option><option value="Hyundai">Hyundai</option><option value="Infiniti">Infiniti</option><option value="Jaguar">Jaguar</option><option value="Jeep">Jeep</option><option value="Kia">Kia</option><option value="Land Rover">Land Rover</option><option value="Lexus">Lexus</option><option value="Lincoln">Lincoln</option><option value="Maserati">Maserati</option><option value="Mazda">Mazda</option><option value="Mercedes-Benz">Mercedes-Benz</option><option value="MINI">MINI</option><option value="Mitsubishi">Mitsubishi</option><option value="Nissan">Nissan</option><option value="Porsche">Porsche</option><option value="RAM">RAM</option><option value="Subaru">Subaru</option><option value="Tesla">Tesla</option><option value="Toyota">Toyota</option><option value="Volkswagen">Volkswagen</option><option value="Volvo">Volvo</option><option value="OTHER">Other Make...</option>
+                            </select>
+                        </div>
+                        <select id="regVehicleModel" disabled class="w-full mt-2 p-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue disabled:opacity-60 cursor-pointer">
+                            <option value="">-- Select Make First --</option>
+                        </select>
+                        <div id="regOtherMakeContainer" class="hidden mt-2">
+                            <input type="text" id="regCustomMake" placeholder="e.g. Rivian, Lucid, Polestar" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
+                        </div>
+                        <p id="regClassicWarning" class="hidden mt-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800"><i class="fa-solid fa-triangle-exclamation mr-1"></i> We work 100% virtually and can't accept exotic, vintage, classic, or collector cars.</p>
+                        <input type="number" id="regVehicleMileage" placeholder="Current mileage, e.g. 45000" class="w-full mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
+                        <p id="regEligibilitySnapshot" class="hidden mt-2 p-2.5 rounded-lg text-[11px] leading-relaxed"></p>
+                        <textarea id="regVehicleNotes" rows="2" placeholder="Anything else about the vehicle: trim level, aftermarket upgrades/modifications, condition notes, etc." class="w-full mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs leading-relaxed focus:outline-none focus:border-brand-blue resize-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Vehicle State (2-Letter Code)</label>
+                        <input type="text" id="newShopState" placeholder="e.g., TX" maxlength="2" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center uppercase font-bold focus:outline-none focus:border-brand-blue">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Appraisal Type</label>
+                        <select id="newShopClaims" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-brand-blue cursor-pointer">
+                            <option value="" disabled selected class="text-slate-500">Select appraisal type...</option>
+                            <option value="Diminished Value" class="bg-white">Diminished Value Appraisal ($199 + $299)</option>
+                            <option value="Total Loss" class="bg-white">Total Loss Appraisal ($299)</option>
+                            <option value="Estate/Probate" class="bg-white">Estate & Probate Appraisal ($299)</option>
+                            <option value="Bank & Collateral" class="bg-white">Bank & Collateral Appraisal ($299)</option>
+                            <option value="IRS Donation" class="bg-white">IRS Vehicle Donation Appraisal ($299)</option>
+                            <option value="Divorce/Legal Settlement" class="bg-white">Divorce / Legal Settlement ($299)</option>
+                        </select>
+                        <p id="pricingNote" class="text-[10px] text-slate-500 mt-1.5 leading-relaxed"></p>
+                        <div id="dvMoneyBackBadge" class="hidden mt-2.5 bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-xl p-3 text-center space-y-1">
+                            <span class="inline-block text-[9px] font-black bg-amber-100/90 text-brand-gold border border-amber-200 px-2.5 py-0.5 rounded-full uppercase tracking-widest">🛡️ Money-Back Guarantee</span>
+                            <p class="text-[11px] text-slate-700 leading-snug">
+                                <strong>$199 down</strong> to start, with the remaining <strong>$299 due only after</strong> the insurance company delivers an offer. If our full fee ($498) isn't covered by that offer, you get your money back.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- ⚠️ DIMINISHED VALUE ELIGIBILITY GATE — required for DV claims only -->
+                    <div id="dvEligibilityGate" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-3.5 space-y-2.5">
+                        <p class="text-[11px] font-bold text-brand-gold uppercase tracking-wide"><i class="fa-solid fa-circle-exclamation mr-1"></i> Diminished Value Eligibility</p>
+                        <p class="text-[11px] text-slate-600 leading-relaxed">Your vehicle's age, mileage, and make are checked automatically above. Please also confirm:</p>
+                        <label class="flex items-start gap-2 cursor-pointer select-none">
+                            <input type="checkbox" class="dv-elig-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
+                            <span class="text-[11px] text-slate-700 leading-snug">I was <strong>not at fault</strong> for the collision, and this claim will be filed against the <strong>at-fault driver's (3rd-party) insurance</strong>.</span>
+                        </label>
+                        <label class="flex items-start gap-2 cursor-pointer select-none">
+                            <input type="checkbox" class="dv-elig-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
+                            <span class="text-[11px] text-slate-700 leading-snug">My vehicle has <strong>no major prior structural accident</strong> history.</span>
+                        </label>
+                        <label class="flex items-start gap-2 cursor-pointer select-none">
+                            <input type="checkbox" class="dv-elig-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
+                            <span class="text-[11px] text-slate-700 leading-snug">My vehicle is registered in a state <strong>other than Nebraska (NE) or Michigan (MI)</strong>.</span>
+                        </label>
+                        <p id="dvEligibilityWarning" class="hidden text-[11px] font-bold text-red-600 pt-1"><i class="fa-solid fa-ban mr-1"></i> You must confirm all three items above to submit a Diminished Value claim. If any don't apply to you, please call us at 910-333-6001 to discuss other options.</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Email Address</label>
+                        <input type="email" id="newShopEmail" placeholder="you@email.com" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-brand-blue">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Create a Account PIN</label>
+                        <div class="relative w-full">
+                            <input type="password" id="newShopPassword" placeholder="••••" class="w-full p-3 pr-12 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center tracking-widest focus:outline-none focus:border-brand-blue">
+                            <button type="button" id="toggleRegPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-brand-blue select-none">Show</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Confirm Account PIN</label>
+                        <div class="relative w-full">
+                            <input type="password" id="newShopPasswordConfirm" placeholder="••••" class="w-full p-3 pr-12 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center tracking-widest focus:outline-none focus:border-brand-blue">
+                            <button type="button" id="toggleRegPasswordConfirm" class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-brand-blue select-none">Show</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🔑 REMEMBER ME ON REGISTRATION -->
+                <div class="flex items-center justify-between px-1 pt-1">
+                    <label class="flex items-center space-x-2 cursor-pointer select-none">
+                        <input type="checkbox" id="rememberMeReg" checked class="w-4 h-4 rounded bg-white border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
+                        <span class="text-xs text-slate-500 font-bold uppercase tracking-wide">Remember Me on this device</span>
+                    </label>
+                </div>
+
+                <button type="button" id="registerBtn" class="w-full bg-brand-blue hover:bg-brand-blueHover active:scale-[0.98] text-white font-black uppercase tracking-wider p-4 rounded-xl shadow-md shadow-blue-500/20">Create Account & Access Portal</button>
+                
+                <div class="text-center pt-1">
+                    <button type="button" id="backToPhoneBtn2" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide">← Change Phone Number</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SCREEN 2: AUTHENTICATED PORTAL DASHBOARD -->
+        <div id="authHeader" class="w-full hidden space-y-4 mb-4">
+            <div class="bg-slate-50 p-3 rounded-xl text-center border border-slate-200 flex justify-between items-center px-4">
+                <p id="shopDisplay" class="text-xs font-black text-brand-blue uppercase tracking-widest truncate pr-2"></p>
+                <button type="button" id="toggleChangePassBtn" class="text-[10px] font-bold text-slate-400 hover:text-brand-blue uppercase tracking-wider flex-shrink-0">⚙️ Settings</button>
+            </div>
+
+            <div id="changePasswordPanel" class="hidden p-4 bg-white border border-slate-200 rounded-xl space-y-3">
+                <p class="text-[11px] text-brand-blue font-bold text-center uppercase tracking-widest">Account Settings</p>
+                <input type="password" id="changeOldPass" placeholder="Verify Old Password" class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs text-center focus:outline-none focus:border-brand-blue">
+                <input type="password" id="changeNewPass" placeholder="Enter New Password" class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs text-center focus:outline-none focus:border-brand-blue">
+                <button type="button" id="executeChangePassBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-lg text-xs tracking-wide uppercase">CONFIRM SECURITY RESET</button>
+                
+                <!-- 🚪 CLEAN LOG OUT BUTTON -->
+                <button type="button" id="logoutBtn" class="w-full bg-rose-950/80 hover:bg-rose-900/90 text-rose-300 font-bold py-2 rounded-lg text-xs tracking-wide uppercase border border-rose-500/30 transition">🚪 Log Out</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-50 rounded-xl border border-slate-200">
+                <button id="tabUpload" class="text-xs font-black uppercase tracking-wider py-2.5 rounded-lg bg-brand-blue text-white shadow-md">Upload New</button>
+                <button id="tabTrack" class="text-xs font-black uppercase tracking-wider py-2.5 rounded-lg text-slate-400 hover:text-white transition">Track Claims</button>
+            </div>
+        </div>
+
+        <!-- TAB A: Upload Form -->
+        <form id="uploadForm" class="w-full space-y-4 hidden">
+            <div>
+                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Insurance Claim # (if known)</label>
+                <input type="text" id="claimNumber" placeholder="e.g., 123456-1 (leave blank if you don't have one yet)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">VIN (Vehicle Identification Number)</label>
+                <input type="text" id="vehicleVin" maxlength="17" placeholder="17-character VIN" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 uppercase tracking-wide focus:outline-none focus:border-brand-blue">
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Specific Notes</label>
+                <textarea id="notes" rows="2" placeholder="Any damaged parts which do not show on estimate or photos/Anything else we should know about the claim." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue resize-none text-xs leading-relaxed"></textarea>
+            </div>
+            
+            <!-- UPLOAD & CONTINUOUS CAMERA BUTTONS -->
+            <div>
+                <div class="flex items-center justify-between mb-1 pl-1">
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Upload Photos & Documents</label>
+                    <a href="photo-guide.png" target="_blank" class="text-[10px] font-bold text-brand-blue hover:text-brand-blueHover uppercase tracking-wide inline-flex items-center gap-1"><i class="fa-solid fa-circle-question"></i> View Photo Guide</a>
+                </div>
+                <div class="grid grid-cols-1 gap-2.5">
+                    <div class="relative w-full p-4 bg-slate-50 border border-dashed border-slate-600 hover:border-cyan-400/70 rounded-xl text-center cursor-pointer">
+                        <input type="file" id="files" multiple accept="image/*,application/pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <p class="text-xs font-bold text-slate-700 uppercase tracking-wide">📁 Select Files / Existing Photos</p>
+                    </div>
+
+                    <!-- 📸 MOBILE-ONLY SLEEK MULTI-SHOT CAMERA TRIGGER -->
+                    <button type="button" id="openCameraBtn" class="sm:hidden w-full bg-white hover:bg-blue-50 hover:border-brand-blue text-brand-blue border-2 border-blue-200 font-black p-3.5 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center space-x-2.5 shadow-sm active:scale-[0.98] transition group">
+                        <span class="text-base group-hover:scale-110 transition-transform">📸</span>
+                        <span>Take Multiple Photos Now</span>
+                    </button>
+                </div>
+
+                <div id="filePreviewContainer" class="mt-3 space-y-2 max-h-[160px] overflow-y-auto hidden pr-1"></div>
+            </div>
+
+            <!-- ✅ PRE-SUBMISSION CHECKLIST — required for every appraisal type -->
+            <div class="w-full bg-blue-50/60 border border-blue-200 rounded-xl p-3.5 space-y-2.5">
+                <p class="text-[11px] font-bold text-brand-blue uppercase tracking-wide"><i class="fa-solid fa-clipboard-check mr-1"></i> Before You Submit</p>
+                <p class="text-[10px] text-slate-500 leading-relaxed">(Your vehicle's age, mileage, and make were already checked when you registered.)</p>
+                <label class="flex items-start gap-2 cursor-pointer select-none">
+                    <input type="checkbox" class="presubmit-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
+                    <span class="text-[11px] text-slate-700 leading-snug">I have taken and uploaded all photos required by the <a href="photo-guide.png" target="_blank" class="text-brand-blue underline font-semibold">Vehicle Photo Guide</a> (all 4 corners, VIN, odometer, engine bay, and all 4 open doors).</span>
+                </label>
+                <label class="flex items-start gap-2 cursor-pointer select-none">
+                    <input type="checkbox" class="presubmit-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
+                    <span class="text-[11px] text-slate-700 leading-snug">My vehicle has <strong>no prior accident history</strong>.</span>
+                </label>
+            </div>
+
+            <!-- Progress Status Panel -->
+            <div id="uploadProgressContainer" class="hidden w-full bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-xs font-bold text-slate-700 tracking-wide uppercase">Submitting Files, Please Wait...</span>
+                    </div>
+                    <span id="uploadProgressPercent" class="text-xs font-black text-brand-blue">0%</span>
+                </div>
+                <div class="w-full bg-white h-2 rounded-full overflow-hidden border border-slate-200">
+                    <div id="uploadProgressBar" class="bg-gradient-to-r from-brand-blue to-blue-400 h-full w-0 transition-all duration-150 ease-out"></div>
+                </div>
+            </div>
+
+            <!-- ✍️ AUTHORIZATION & E-SIGNATURE -->
+            <div class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+                <p class="text-[11px] text-slate-500 leading-relaxed">
+                    By signing below, I authorize Estimate Consultants to prepare an independent vehicle appraisal report for the vehicle described above, based on the documents and photos I provide.
+                </p>
+                <div class="relative w-full bg-white rounded-lg overflow-hidden border border-slate-600" style="touch-action: none;">
+                    <canvas id="signaturePad" class="w-full h-[120px] block cursor-crosshair"></canvas>
+                    <p id="signaturePlaceholder" class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-wide pointer-events-none">Sign Here</p>
+                </div>
+                <div class="flex items-center justify-between">
+                    <button type="button" id="clearSignatureBtn" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide">Clear Signature</button>
+                    <span id="signatureStatus" class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Not Signed</span>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-brand-blue tracking-wider mb-1">Type Full Legal Name to Confirm</label>
+                    <input type="text" id="signatureTypedName" placeholder="e.g., Jane Smith" class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="w-full bg-brand-blue hover:bg-brand-blueHover active:scale-[0.98] text-white font-black uppercase tracking-wider p-4 rounded-xl shadow-md shadow-blue-500/20">Submit Vehicle for Appraisal</button>
+        </form>
+
+        <!-- TAB B: Claims Tracking Container -->
+        <div id="trackingScreen" class="w-full hidden">
+            <div id="trackingHeaderPanel" class="flex justify-between items-center mb-3 w-full px-1">
+                <span class="text-xs font-bold uppercase text-slate-500 tracking-widest">My Appraisal Requests</span>
+                <button type="button" id="refreshClaimsLiveBtn" class="text-[11px] font-black text-brand-blue hover:text-brand-blue transition duration-150 uppercase tracking-wider cursor-pointer">🔄 Refresh Live</button>
+            </div>
+            <div id="claimsList" class="space-y-3 max-h-[350px] overflow-y-auto pr-1 w-full"></div>
+        </div>
+
+        <!-- 📲 FOOTER: INSTALL APP INSTRUCTIONS LINK (ONLY SHOWN IF NOT INSTALLED) -->
+        <div id="installAppFooter" class="mt-5 pt-4 border-t border-slate-200 w-full text-center">
+            <button type="button" id="openInstallGuideBtn" class="text-[11px] font-bold text-slate-400 hover:text-brand-blue uppercase tracking-wider inline-flex items-center space-x-1.5 transition group cursor-pointer">
+                <span class="group-hover:scale-110 transition-transform">📲</span>
+                <span>how to install the app</span>
+            </button>
+        </div>
+
+        </div>
+    </main>
+
+    <!-- 🔒 MANDATORY FORCE PASSWORD RESET MODAL -->
+    <div id="forceResetModal" class="hidden fixed inset-0 bg-slate-50 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div class="bg-white border border-slate-200 p-6 rounded-3xl max-w-sm w-full text-center space-y-4 shadow-2xl relative">
+            <div class="w-12 h-12 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-full flex items-center justify-center mx-auto text-xl font-bold">🔑</div>
+            <h3 class="text-base font-bold text-slate-800 tracking-wide uppercase">Set New Permanent PIN</h3>
+            <p class="text-xs text-slate-500 leading-relaxed font-normal">You logged in using a temporary PIN. Please create a new permanent password/PIN to secure your account.</p>
+
+            <div class="space-y-3 text-left">
+                <div>
+                    <label class="block text-[11px] font-bold uppercase text-brand-blue tracking-wider mb-1 pl-1">New Password / PIN</label>
+                    <input type="password" id="forceNewPass" placeholder="••••" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-center tracking-widest focus:outline-none focus:border-brand-blue">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold uppercase text-brand-blue tracking-wider mb-1 pl-1">Confirm New Password / PIN</label>
+                    <input type="password" id="forceNewPassConfirm" placeholder="••••" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-center tracking-widest focus:outline-none focus:border-brand-blue">
+                </div>
+            </div>
+
+            <button id="saveForceResetBtn" type="button" class="w-full bg-brand-blue hover:bg-brand-blueHover active:scale-[0.98] text-white font-black uppercase tracking-wider p-3.5 rounded-xl shadow-md shadow-blue-500/20 transition">Save New PIN & Continue</button>
+        </div>
+    </div>
+
+    <!-- 📱 SMART DEVICE-DETECTING INSTALLATION GUIDE MODAL -->
+    <div id="installGuideModal" class="hidden fixed inset-0 bg-white/85 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div class="bg-white border border-slate-200 p-6 rounded-3xl max-w-sm w-full space-y-5 shadow-2xl relative">
+            
+            <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg">📱</span>
+                    <h3 class="text-sm font-black text-brand-blue uppercase tracking-wider">Install App Guide</h3>
+                </div>
+                <button type="button" id="closeInstallGuideBtn" class="text-slate-400 hover:text-white text-base font-bold px-2 py-0.5 rounded-lg">✕</button>
+            </div>
+
+            <!-- TAB SELECTOR SWITCH -->
+            <div class="grid grid-cols-3 gap-1 bg-white p-1 rounded-xl border border-slate-200 text-[10px] font-bold uppercase tracking-wider text-center">
+                <button type="button" id="tabGuideIos" class="py-2 rounded-lg transition"> iOS</button>
+                <button type="button" id="tabGuideAndroid" class="py-2 rounded-lg transition">🤖 Android</button>
+                <button type="button" id="tabGuideDesktop" class="py-2 rounded-lg transition">💻 Desktop</button>
+            </div>
+
+            <!-- iOS GUIDE CONTENT -->
+            <div id="guideContentIos" class="hidden space-y-3 text-xs text-slate-700">
+                <p class="text-[11px] text-brand-blue font-bold uppercase tracking-wide">For iPhone & iPad (Safari):</p>
+                <ol class="space-y-2.5 list-decimal list-inside pl-1 text-slate-500 font-normal leading-relaxed">
+                    <li>Tap Safari's <strong class="text-white">Share button</strong> <span class="bg-slate-800 px-1.5 py-0.5 rounded text-brand-blue border border-slate-700">⎋ / ⍎</span> at the bottom of your screen.</li>
+                    <li>Scroll down the menu and tap <strong class="text-white">"Add to Home Screen"</strong> <span class="text-brand-blue">➕</span>.</li>
+                    <li>Tap <strong class="text-white">"Add"</strong> in the top-right corner to place the app on your home screen.</li>
+                </ol>
+            </div>
+
+            <!-- ANDROID GUIDE CONTENT -->
+            <div id="guideContentAndroid" class="hidden space-y-3 text-xs text-slate-700">
+                <p class="text-[11px] text-brand-blue font-bold uppercase tracking-wide">For Android Devices (Chrome):</p>
+                <ol class="space-y-2.5 list-decimal list-inside pl-1 text-slate-500 font-normal leading-relaxed">
+                    <li>Tap Chrome's <strong class="text-white">Menu icon</strong> <span class="bg-slate-800 px-1.5 py-0.5 rounded text-brand-blue border border-slate-700">⋮</span> in the top-right corner.</li>
+                    <li>Select <strong class="text-white">"Install app"</strong> or <strong class="text-white">"Add to Home screen"</strong>.</li>
+                    <li>Tap <strong class="text-white">"Install"</strong> in the popup prompt to confirm.</li>
+                </ol>
+            </div>
+
+            <!-- DESKTOP GUIDE CONTENT -->
+            <div id="guideContentDesktop" class="hidden space-y-3 text-xs text-slate-700">
+                <p class="text-[11px] text-brand-blue font-bold uppercase tracking-wide">For PC & Mac (Chrome / Edge):</p>
+                <ol class="space-y-2.5 list-decimal list-inside pl-1 text-slate-500 font-normal leading-relaxed">
+                    <li>Look at the right side of your browser's <strong class="text-white">Address Bar</strong> at the top.</li>
+                    <li>Click the <strong class="text-white">Install icon</strong> <span class="bg-slate-800 px-1.5 py-0.5 rounded text-brand-blue border border-slate-700">⤓</span> or <span class="bg-slate-800 px-1.5 py-0.5 rounded text-brand-blue border border-slate-700">⊕</span>.</li>
+                    <li>Click <strong class="text-white">"Install"</strong> to launch the portal as a standalone app.</li>
+                </ol>
+            </div>
+
+            <button type="button" id="dismissInstallGuideBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition">Got It</button>
+        </div>
+    </div>
+
+    <!-- 📸 IN-APP HIGH-RES CONTINUOUS CAMERA MODAL -->
+    <div id="cameraModal" class="hidden fixed inset-0 bg-white z-50 flex flex-col justify-between items-center p-4">
+        <div class="w-full flex justify-between items-center pt-2 px-2 z-10">
+            <span id="cameraPhotoCount" class="text-xs font-black bg-blue-50 text-brand-blue border border-blue-200 px-3.5 py-1.5 rounded-full uppercase tracking-widest">0 Captured</span>
+            <button type="button" id="closeCameraBtn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-xl border border-white/10">Done ✔</button>
+        </div>
+
+        <div class="relative w-full max-w-md h-[65vh] bg-black rounded-2xl overflow-hidden my-auto flex items-center justify-center border border-slate-200">
+            <video id="cameraStream" autoplay playsinline class="w-full h-full object-cover"></video>
+            <canvas id="cameraCanvas" class="hidden"></canvas>
+            <!-- Flash Visual Indicator -->
+            <div id="cameraFlash" class="absolute inset-0 bg-white opacity-0 pointer-events-none transition-opacity duration-150"></div>
+        </div>
+
+        <div class="w-full max-w-md flex justify-center items-center pb-6">
+            <button type="button" id="shutterBtn" class="w-20 h-20 bg-white border-4 border-cyan-400 rounded-full flex items-center justify-center active:scale-95 shadow-[0_0_30px_rgba(56,189,248,0.5)] transition">
+                <div class="w-16 h-16 bg-slate-100 rounded-full border-2 border-slate-400"></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- CUSTOM INSTANT SUCCESS MODAL -->
+    <div id="successModal" class="hidden fixed inset-0 bg-white/85 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div class="bg-white border border-slate-200 p-6 rounded-2xl max-w-sm w-full text-center space-y-4 shadow-2xl">
+            <div class="w-12 h-12 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto text-xl font-bold">✓</div>
+            <h3 class="text-base font-bold text-slate-800 tracking-wide">Received.</h3>
+            <p class="text-xs text-slate-500 leading-relaxed font-normal">Thank you for your submission.</p>
+            <button id="closeModalBtn" type="button" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition">Dismiss</button>
+        </div>
+    </div>
+
+    <script>
+        const webAppUrl = 'https://script.google.com/macros/s/AKfycbyVaMTnlWK4MFOLaBpPoAbIe7Jy4dQr3cCPSPeOGllFTQzkhUiVAKOyc2usnWcTRMRj/exec';
+
+        // 📱 PWA SERVICE WORKER REGISTRATION
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(() => console.log('PWA Service Worker registered.'))
+                .catch(err => console.log('SW initialization error:', err));
+        }
+
+        function isAppInstalled() {
+            return window.matchMedia('(display-mode: standalone)').matches ||
+                   window.navigator.standalone === true ||
+                   document.referrer.includes('android-app://');
+        }
+
+        const installAppFooter = document.getElementById('installAppFooter');
+        const openInstallGuideBtn = document.getElementById('openInstallGuideBtn');
+        const installGuideModal = document.getElementById('installGuideModal');
+        const closeInstallGuideBtn = document.getElementById('closeInstallGuideBtn');
+        const dismissInstallGuideBtn = document.getElementById('dismissInstallGuideBtn');
+
+        const tabGuideIos = document.getElementById('tabGuideIos');
+        const tabGuideAndroid = document.getElementById('tabGuideAndroid');
+        const tabGuideDesktop = document.getElementById('tabGuideDesktop');
+        
+        const guideContentIos = document.getElementById('guideContentIos');
+        const guideContentAndroid = document.getElementById('guideContentAndroid');
+        const guideContentDesktop = document.getElementById('guideContentDesktop');
+
+        if (isAppInstalled()) {
+            if (installAppFooter) installAppFooter.classList.add('hidden');
+        }
+
+        function detectUserOS() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) return 'ios';
+            if (/android/i.test(userAgent)) return 'android';
+            return 'desktop';
+        }
+
+        function showGuideTab(targetOs) {
+            [tabGuideIos, tabGuideAndroid, tabGuideDesktop].forEach(tab => {
+                tab.className = "py-2 rounded-lg text-slate-400 hover:text-white transition cursor-pointer";
+            });
+            [guideContentIos, guideContentAndroid, guideContentDesktop].forEach(c => c.classList.add('hidden'));
+
+            if (targetOs === 'ios') {
+                tabGuideIos.className = "py-2 rounded-lg bg-brand-blue text-white font-black shadow transition cursor-pointer";
+                guideContentIos.classList.remove('hidden');
+            } else if (targetOs === 'android') {
+                tabGuideAndroid.className = "py-2 rounded-lg bg-brand-blue text-white font-black shadow transition cursor-pointer";
+                guideContentAndroid.classList.remove('hidden');
+            } else {
+                tabGuideDesktop.className = "py-2 rounded-lg bg-brand-blue text-white font-black shadow transition cursor-pointer";
+                guideContentDesktop.classList.remove('hidden');
+            }
+        }
+
+        openInstallGuideBtn.addEventListener('click', () => {
+            const detectedOs = detectUserOS();
+            showGuideTab(detectedOs);
+            installGuideModal.classList.remove('hidden');
+        });
+
+        tabGuideIos.addEventListener('click', () => showGuideTab('ios'));
+        tabGuideAndroid.addEventListener('click', () => showGuideTab('android'));
+        tabGuideDesktop.addEventListener('click', () => showGuideTab('desktop'));
+
+        function closeGuideModal() { installGuideModal.classList.add('hidden'); }
+        closeInstallGuideBtn.addEventListener('click', closeGuideModal);
+        dismissInstallGuideBtn.addEventListener('click', closeGuideModal);
+
+        let deferredPrompt;
+        const pwaInstallBanner = document.getElementById('pwaInstallBanner');
+        const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+        const pwaDismissBtn = document.getElementById('pwaDismissBtn');
+
+        const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            if (isAppInstalled()) return;
+
+            const lastDismissedTime = localStorage.getItem('ec_appraisal_pwa_dismissed_time');
+            const now = Date.now();
+
+            if (!lastDismissedTime || (now - parseInt(lastDismissedTime, 10)) > COOLDOWN_MS) {
+                if (pwaInstallBanner) pwaInstallBanner.classList.remove('hidden');
+            }
+        });
+
+        if (pwaInstallBtn) {
+            pwaInstallBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                    pwaInstallBanner.classList.add('hidden');
+                }
+            });
+        }
+
+        if (pwaDismissBtn) {
+            pwaDismissBtn.addEventListener('click', () => {
+                localStorage.setItem('ec_appraisal_pwa_dismissed_time', Date.now().toString());
+                if (pwaInstallBanner) pwaInstallBanner.classList.add('hidden');
+            });
+        }
+
+        window.addEventListener('appinstalled', () => {
+            if (pwaInstallBanner) pwaInstallBanner.classList.add('hidden');
+            if (installAppFooter) installAppFooter.classList.add('hidden');
+        });
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let urlShopIdentifier = urlParams.get('s') || '';
+        
+        // DOM Elements
+        const verificationScreen = document.getElementById('verificationScreen');
+        const phoneStep = document.getElementById('phoneStep');
+        const existingShopContainer = document.getElementById('existingShopContainer');
+        const newShopContainer = document.getElementById('newShopContainer');
+        
+        const phoneInput = document.getElementById('verificationPhone');
+        const verifyPhoneBtn = document.getElementById('verifyPhoneBtn');
+        const autoLoginProgressContainer = document.getElementById('autoLoginProgressContainer');
+        const autoLoginProgressBar = document.getElementById('autoLoginProgressBar');
+        
+        const welcomeShopName = document.getElementById('welcomeShopName');
+        const loginPasswordInput = document.getElementById('loginPassword');
+        const loginLabel = document.getElementById('loginLabel');
+        const loginBtn = document.getElementById('loginBtn');
+        const rememberMeCheckbox = document.getElementById('rememberMe');
+        const rememberMeRegCheckbox = document.getElementById('rememberMeReg');
+        
+        const registerBtn = document.getElementById('registerBtn');
+        const regHeaderTitle = document.getElementById('regHeaderTitle');
+        const backToPhoneBtn1 = document.getElementById('backToPhoneBtn1');
+        const backToPhoneBtn2 = document.getElementById('backToPhoneBtn2');
+        
+        const authHeader = document.getElementById('authHeader');
+        const uploadForm = document.getElementById('uploadForm');
+        const trackingScreen = document.getElementById('trackingScreen');
+        const refreshClaimsLiveBtn = document.getElementById('refreshClaimsLiveBtn');
+        const changePasswordPanel = document.getElementById('changePasswordPanel');
+        const claimsList = document.getElementById('claimsList');
+        const forgotBtn = document.getElementById('forgotBtn');
+        const toggleChangePassBtn = document.getElementById('toggleChangePassBtn');
+        const executeChangePassBtn = document.getElementById('executeChangePassBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const shopDisplay = document.getElementById('shopDisplay');
+        const tabUpload = document.getElementById('tabUpload');
+        const tabTrack = document.getElementById('tabTrack');
+        const fileInput = document.getElementById('files');
+        const filePreviewContainer = document.getElementById('filePreviewContainer');
+        const toggleRegPassword = document.getElementById('toggleRegPassword');
+        const toggleRegPasswordConfirm = document.getElementById('toggleRegPasswordConfirm');
+        const otpRequestBtn = document.getElementById('otpRequestBtn');
+        const otpSmsRequestBtn = document.getElementById('otpSmsRequestBtn');
+
+        const uploadProgressContainer = document.getElementById('uploadProgressContainer');
+        const uploadProgressBar = document.getElementById('uploadProgressBar');
+        const uploadProgressPercent = document.getElementById('uploadProgressPercent');
+        const successModal = document.getElementById('successModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        // Mandatory Force Reset Password Elements
+        const forceResetModal = document.getElementById('forceResetModal');
+        const saveForceResetBtn = document.getElementById('saveForceResetBtn');
+
+        // Camera Elements
+        const openCameraBtn = document.getElementById('openCameraBtn');
+        const cameraModal = document.getElementById('cameraModal');
+        const closeCameraBtn = document.getElementById('closeCameraBtn');
+        const cameraStream = document.getElementById('cameraStream');
+        const cameraCanvas = document.getElementById('cameraCanvas');
+        const shutterBtn = document.getElementById('shutterBtn');
+        const cameraFlash = document.getElementById('cameraFlash');
+        const cameraPhotoCount = document.getElementById('cameraPhotoCount');
+        let activeMediaStream = null;
+        let sessionCapturedPhotos = 0;
+
+        // Global State Variables
+        let globalShopName = "", globalPhoneIdentity = "", isNewShop = false;
+        let selectedFiles = [];
+        let activeAuthMode = "password"; 
+        let cachedPassword = ""; 
+        let tempUsedPassword = "";
+        let pendingClaimsData = [];
+
+        // 🚗 VEHICLE YEAR/MAKE/MODEL SELECTOR — same list as the DV estimator tool on the main site
+        const CLEAN_PASSENGER_MODELS_MAP = {
+            "Acura": ["ILX", "Integra", "MDX", "NSX", "RDX", "RLX", "TLX", "ZDX"],
+            "Alfa Romeo": ["4C", "Giulia", "Stelvio", "Tonale"],
+            "Audi": ["A3", "A4", "A5", "A6", "A7", "A8", "e-tron", "Q3", "Q4 e-tron", "Q5", "Q7", "Q8", "R8", "RS3", "RS5", "RS6", "RS7", "RS Q8", "S3", "S4", "S5", "SQ5", "SQ7", "SQ8", "TT"],
+            "BMW": ["2 Series", "3 Series", "4 Series", "5 Series", "7 Series", "8 Series", "X1", "X2", "X3", "X4", "X5", "X6", "X7", "Z4", "i4", "i7", "iX"],
+            "Buick": ["Enclave", "Encore", "Encore GX", "Envision", "Envista", "LaCrosse", "Regal"],
+            "Cadillac": ["ATS", "CT4", "CT5", "CT6", "CTS", "Escalade", "Escalade ESV", "LYRIQ", "XT4", "XT5", "XT6"],
+            "Chevrolet": ["Blazer", "Bolt EV", "Bolt EUV", "Camaro", "Colorado", "Corvette", "Cruze", "Equinox", "Impala", "Malibu", "Silverado 1500", "Silverado 2500HD", "Silverado 3500HD", "Suburban", "Tahoe", "Trailblazer", "Traverse", "Trax"],
+            "Chrysler": ["200", "300", "Pacifica", "Voyager"],
+            "Dodge": ["Challenger", "Charger", "Dart", "Durango", "Grand Caravan", "Hornet", "Journey", "Viper"],
+            "Ford": ["Bronco", "Bronco Sport", "Edge", "Escape", "Expedition", "Explorer", "F-150", "F-250 Super Duty", "F-350 Super Duty", "Fiesta", "Flex", "Focus", "Fusion", "Maverick", "Mustang", "Mustang Mach-E", "Ranger", "Taurus", "Transit-150", "Transit-250", "Transit-350"],
+            "Genesis": ["G70", "G80", "G90", "GV60", "GV70", "GV80"],
+            "GMC": ["Acadia", "Canyon", "Hummer EV", "Sierra 1500", "Sierra 2500HD", "Sierra 3500HD", "Terrain", "Yukon", "Yukon XL"],
+            "Honda": ["Accord", "Civic", "CR-V", "Fit", "HR-V", "Insight", "Odyssey", "Passport", "Pilot", "Prologue", "Ridgeline"],
+            "Hyundai": ["Accent", "Elantra", "Ioniq 5", "Ioniq 6", "Kona", "Palisade", "Santa Cruz", "Santa Fe", "Sonata", "Tucson", "Venue"],
+            "Infiniti": ["Q50", "Q60", "QX50", "QX55", "QX60", "QX80"],
+            "Jaguar": ["E-Pace", "F-Pace", "F-Type", "I-Pace"],
+            "Jeep": ["Cherokee", "Compass", "Gladiator", "Grand Cherokee", "Renegade", "Wagoneer", "Grand Wagoneer", "Wrangler"],
+            "Kia": ["Carnival", "EV6", "EV9", "Forte", "K5", "Niro", "Seltos", "Sorento", "Soul", "Sportage", "Stinger", "Telluride"],
+            "Land Rover": ["Defender", "Discovery", "Discovery Sport", "Range Rover", "Range Rover Evoque", "Range Rover Sport", "Range Rover Velar"],
+            "Lexus": ["ES", "GX", "IS", "LC", "LS", "LX", "NX", "RC", "RX", "TX"],
+            "Lincoln": ["Aviator", "Corsair", "Nautilus", "Navigator"],
+            "Mazda": ["CX-30", "CX-5", "CX-50", "CX-70", "CX-90", "Mazda3", "Mazda6", "MX-5 Miata"],
+            "Mercedes-Benz": ["C-Class", "CLA", "E-Class", "GLA", "GLB", "GLC", "GLE", "GLS", "S-Class", "G-Class"],
+            "Nissan": ["Altima", "Armada", "Frontier", "Kicks", "Maxima", "Murano", "Pathfinder", "Rogue", "Sentra", "Titan", "Versa", "Z"],
+            "Porsche": ["718 Boxster / Cayman", "911", "Cayenne", "Macan", "Panamera", "Taycan"],
+            "RAM": ["1500", "2500", "3500", "ProMaster 1500", "ProMaster 2500", "ProMaster 3500", "ProMaster City"],
+            "Subaru": ["Ascent", "BRZ", "Crosstrek", "Forester", "Impreza", "Legacy", "Outback", "Solterra", "WRX"],
+            "Tesla": ["Cybertruck", "Model 3", "Model S", "Model X", "Model Y"],
+            "Toyota": ["4Runner", "Camry", "Corolla", "Corolla Cross", "Crown", "Grand Highlander", "Highlander", "Land Cruiser", "Prius", "RAV4", "Sequoia", "Sienna", "Tacoma", "Tundra", "Venza"],
+            "Volkswagen": ["Atlas", "Atlas Cross Sport", "Golf GTI", "Golf R", "ID.4", "Jetta", "Taos", "Tiguan"],
+            "Volvo": ["S60 / S90", "XC40", "XC60", "XC90"]
+        };
+
+        const regVehicleYear = document.getElementById('regVehicleYear');
+        const regVehicleMake = document.getElementById('regVehicleMake');
+        const regVehicleModel = document.getElementById('regVehicleModel');
+        const regOtherMakeContainer = document.getElementById('regOtherMakeContainer');
+        const regCustomMake = document.getElementById('regCustomMake');
+        const regClassicWarning = document.getElementById('regClassicWarning');
+
+        (function populateRegYearSelect() {
+            const currentYear = new Date().getFullYear();
+            for (let y = currentYear; y >= currentYear - 15; y--) {
+                regVehicleYear.innerHTML += `<option value="${y}">${y}</option>`;
+            }
+        })();
+
+        regVehicleMake.addEventListener('change', () => {
+            const make = regVehicleMake.value;
+            regClassicWarning.classList.toggle('hidden', make !== 'OTHER');
+
+            if (make === 'OTHER') {
+                regOtherMakeContainer.classList.remove('hidden');
+                regVehicleModel.innerHTML = '<option value="Custom Model">Custom Model</option>';
+                regVehicleModel.disabled = false;
+                return;
+            }
+            regOtherMakeContainer.classList.add('hidden');
+
+            if (!make) {
+                regVehicleModel.innerHTML = '<option value="">-- Select Make First --</option>';
+                regVehicleModel.disabled = true;
+                return;
+            }
+
+            const models = CLEAN_PASSENGER_MODELS_MAP[make];
+            if (models && models.length > 0) {
+                regVehicleModel.innerHTML = '<option value="">-- Select Model --</option>' + models.map(m => `<option value="${m}">${m}</option>`).join('') + '<option value="Other Model">Other Model...</option>';
+            } else {
+                regVehicleModel.innerHTML = '<option value="Standard Model">Standard Model</option><option value="Other Model">Other Model...</option>';
+            }
+            regVehicleModel.disabled = false;
+        });
+
+        function syncVehicleFieldFromSelectors() {
+            const year = regVehicleYear.value;
+            const make = regVehicleMake.value === 'OTHER' ? regCustomMake.value.trim() : regVehicleMake.value;
+            const model = regVehicleModel.value;
+            const combined = [year, make, model].filter(Boolean).join(' ').trim();
+            document.getElementById('newShopContact').value = combined;
+            return combined;
+        }
+
+        // 🚗 AUTO-DERIVED VEHICLE ELIGIBILITY — computed from Year/Mileage/Make, no self-attestation checkbox needed
+        const regEligibilitySnapshot = document.getElementById('regEligibilitySnapshot');
+        const regVehicleMileage = document.getElementById('regVehicleMileage');
+
+        function getVehicleEligibility() {
+            const currentYear = new Date().getFullYear();
+            const year = parseInt(regVehicleYear.value) || null;
+            const mileage = parseInt(regVehicleMileage.value);
+            const make = regVehicleMake.value;
+
+            const age = year ? (currentYear - year) : null;
+            const ageOk = age === null ? null : age <= 10;
+            const mileageOk = isNaN(mileage) ? null : mileage < 100000;
+            const notClassic = make !== 'OTHER';
+
+            return { age, ageOk, mileage: isNaN(mileage) ? null : mileage, mileageOk, notClassic, make };
+        }
+
+        function updateEligibilitySnapshot() {
+            const elig = getVehicleEligibility();
+            if (elig.age === null && elig.mileage === null) {
+                regEligibilitySnapshot.classList.add('hidden');
+                return;
+            }
+
+            const parts = [];
+            if (elig.age !== null) {
+                parts.push(elig.ageOk ? `✓ Vehicle age: ${elig.age} yr` : `⚠ Vehicle age: ${elig.age} yr (over 10)`);
+            }
+            if (elig.mileage !== null) {
+                parts.push(elig.mileageOk ? `✓ Mileage: ${elig.mileage.toLocaleString()} mi` : `⚠ Mileage: ${elig.mileage.toLocaleString()} mi (100k+)`);
+            }
+
+            const allOk = (elig.ageOk !== false) && (elig.mileageOk !== false) && elig.notClassic;
+            regEligibilitySnapshot.className = "mt-2 p-2.5 rounded-lg text-[11px] leading-relaxed " + (allOk ? "bg-emerald-50 border border-emerald-200 text-emerald-800" : "bg-red-50 border border-red-200 text-red-700");
+            regEligibilitySnapshot.innerText = parts.join('  •  ');
+            regEligibilitySnapshot.classList.remove('hidden');
+        }
+
+        regVehicleYear.addEventListener('change', updateEligibilitySnapshot);
+        regVehicleMileage.addEventListener('input', updateEligibilitySnapshot);
+        regVehicleMake.addEventListener('change', updateEligibilitySnapshot);
+
+        // ✍️ SIGNATURE PAD ENGINE
+        const signaturePad = document.getElementById('signaturePad');
+        const signaturePadCtx = signaturePad.getContext('2d');
+        const signaturePlaceholder = document.getElementById('signaturePlaceholder');
+        const clearSignatureBtn = document.getElementById('clearSignatureBtn');
+        const signatureStatus = document.getElementById('signatureStatus');
+        let hasSignature = false;
+        let isDrawing = false;
+
+        function resizeSignatureCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            const rect = signaturePad.getBoundingClientRect();
+            if (rect.width === 0) return;
+            const priorImage = hasSignature ? signaturePad.toDataURL('image/png') : null;
+            signaturePad.width = rect.width * ratio;
+            signaturePad.height = rect.height * ratio;
+            signaturePadCtx.scale(ratio, ratio);
+            signaturePadCtx.lineWidth = 2.2;
+            signaturePadCtx.lineCap = 'round';
+            signaturePadCtx.strokeStyle = '#0f172a';
+            if (priorImage) {
+                const img = new Image();
+                img.onload = () => signaturePadCtx.drawImage(img, 0, 0, rect.width, rect.height);
+                img.src = priorImage;
+            }
+        }
+
+        function getSignaturePoint(evt) {
+            const rect = signaturePad.getBoundingClientRect();
+            return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+        }
+
+        signaturePad.addEventListener('pointerdown', (evt) => {
+            isDrawing = true;
+            hasSignature = true;
+            signaturePlaceholder.classList.add('hidden');
+            signatureStatus.innerText = "Signed ✓";
+            signatureStatus.classList.remove('text-slate-500');
+            signatureStatus.classList.add('text-emerald-400');
+            const p = getSignaturePoint(evt);
+            signaturePadCtx.beginPath();
+            signaturePadCtx.moveTo(p.x, p.y);
+            signaturePad.setPointerCapture(evt.pointerId);
+        });
+
+        signaturePad.addEventListener('pointermove', (evt) => {
+            if (!isDrawing) return;
+            const p = getSignaturePoint(evt);
+            signaturePadCtx.lineTo(p.x, p.y);
+            signaturePadCtx.stroke();
+        });
+
+        ['pointerup', 'pointerleave', 'pointercancel'].forEach(evtName => {
+            signaturePad.addEventListener(evtName, () => { isDrawing = false; });
+        });
+
+        clearSignatureBtn.addEventListener('click', () => {
+            const rect = signaturePad.getBoundingClientRect();
+            signaturePadCtx.clearRect(0, 0, rect.width, rect.height);
+            hasSignature = false;
+            signaturePlaceholder.classList.remove('hidden');
+            signatureStatus.innerText = "Not Signed";
+            signatureStatus.classList.remove('text-emerald-400');
+            signatureStatus.classList.add('text-slate-500');
+        });
+
+        window.addEventListener('resize', resizeSignatureCanvas);
+
+        // 📸 ULTRA-HIGH-RESOLUTION CONTINUOUS CAMERA ENGINE
+        openCameraBtn.addEventListener('click', async () => {
+            try {
+                activeMediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: { ideal: "environment" },
+                        width: { ideal: 3840, min: 1920 },
+                        height: { ideal: 2160, min: 1080 }
+                    },
+                    audio: false
+                });
+                cameraStream.srcObject = activeMediaStream;
+                sessionCapturedPhotos = 0;
+                cameraPhotoCount.innerText = `0 Captured`;
+                cameraModal.classList.remove('hidden');
+            } catch (err) {
+                alert("Unable to access high-res camera. Please check camera permissions in browser settings or use 'Select Files'.");
+            }
+        });
+
+        shutterBtn.addEventListener('click', () => {
+            if (!activeMediaStream) return;
+
+            cameraFlash.classList.remove('opacity-0');
+            cameraFlash.classList.add('opacity-90');
+            setTimeout(() => {
+                cameraFlash.classList.remove('opacity-90');
+                cameraFlash.classList.add('opacity-0');
+            }, 100);
+
+            const videoWidth = cameraStream.videoWidth || 1920;
+            const videoHeight = cameraStream.videoHeight || 1080;
+            
+            cameraCanvas.width = videoWidth;
+            cameraCanvas.height = videoHeight;
+            
+            const context = cameraCanvas.getContext('2d');
+            context.drawImage(cameraStream, 0, 0, videoWidth, videoHeight);
+
+            cameraCanvas.toBlob((blob) => {
+                sessionCapturedPhotos++;
+                const fileName = `Photo_${Date.now()}_${sessionCapturedPhotos}.jpg`;
+                const capturedFile = new File([blob], fileName, { type: 'image/jpeg' });
+                selectedFiles.push(capturedFile);
+                cameraPhotoCount.innerText = `${sessionCapturedPhotos} Captured`;
+                renderFilePreviews();
+            }, 'image/jpeg', 0.95);
+        });
+
+        closeCameraBtn.addEventListener('click', () => {
+            if (activeMediaStream) {
+                activeMediaStream.getTracks().forEach(track => track.stop());
+                activeMediaStream = null;
+            }
+            cameraModal.classList.add('hidden');
+        });
+
+        // ⚡ AUTO-LOGIN WITH PROGRESS BAR ENGINE
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedPhone = localStorage.getItem('ec_appraisal_phone');
+            const savedPass = localStorage.getItem('ec_appraisal_pass');
+
+            if (savedPhone && savedPass) {
+                globalPhoneIdentity = savedPhone;
+                cachedPassword = savedPass;
+                
+                let formattedDigits = savedPhone.replace(/\D/g, '');
+                if (formattedDigits.length === 10) {
+                    phoneInput.value = '(' + formattedDigits.substring(0,3) + ') ' + formattedDigits.substring(3,6) + '-' + formattedDigits.substring(6,10);
+                } else {
+                    phoneInput.value = savedPhone;
+                }
+                phoneInput.disabled = true;
+                verifyPhoneBtn.innerText = "Logging In...";
+                verifyPhoneBtn.disabled = true;
+
+                autoLoginProgressContainer.classList.remove('hidden');
+                autoLoginProgressBar.style.width = '0%';
+
+                let currentAutoProgress = 10;
+                autoLoginProgressBar.style.width = '10%';
+                
+                const autoLoginInterval = setInterval(() => {
+                    if (currentAutoProgress < 90) {
+                        currentAutoProgress += Math.floor(Math.random() * 6) + 3;
+                        if (currentAutoProgress > 90) currentAutoProgress = 90;
+                        autoLoginProgressBar.style.width = currentAutoProgress + '%';
+                    }
+                }, 150);
+
+                fetch(`${webAppUrl}?phone=${savedPhone}&password=${encodeURIComponent(savedPass)}&portal=appraisal`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.authenticated) {
+                            fetch(`${webAppUrl}?phone=${savedPhone}&portal=appraisal`)
+                                .then(r => r.json())
+                                .then(pData => {
+                                    clearInterval(autoLoginInterval);
+                                    autoLoginProgressBar.style.width = '100%';
+                                    globalShopName = pData.shopName || "Active Partner Shop";
+                                    setTimeout(() => {
+                                        autoLoginProgressContainer.classList.add('hidden');
+                                        
+                                        // 🔑 CHECK IF TEMPORARY PIN REQUIRES PASSWORD RESET
+                                        if (data.requiresPasswordChange) {
+                                            tempUsedPassword = savedPass;
+                                            pendingClaimsData = data.claims || [];
+                                            verificationScreen.classList.add('hidden');
+                                            forceResetModal.classList.remove('hidden');
+                                        } else {
+                                            completeAuthentication(data.claims || []);
+                                        }
+                                    }, 200);
+                                });
+                        } else {
+                            clearInterval(autoLoginInterval);
+                            autoLoginProgressContainer.classList.add('hidden');
+                            localStorage.removeItem('ec_appraisal_phone');
+                            localStorage.removeItem('ec_appraisal_pass');
+                            phoneInput.value = "";
+                            phoneInput.disabled = false;
+                            verifyPhoneBtn.innerText = "Continue";
+                            verifyPhoneBtn.disabled = false;
+                        }
+                    })
+                    .catch(() => {
+                        clearInterval(autoLoginInterval);
+                        autoLoginProgressContainer.classList.add('hidden');
+                        phoneInput.disabled = false;
+                        verifyPhoneBtn.innerText = "Continue";
+                        verifyPhoneBtn.disabled = false;
+                    });
+            }
+        });
+
+        phoneInput.addEventListener('input', (e) => {
+            let input = e.target.value.replace(/\D/g, '').substring(0, 10); 
+            let size = input.length;
+            if (size === 0) { e.target.value = ''; }
+            else if (size < 4) { e.target.value = '(' + input; }
+            else if (size < 7) { e.target.value = '(' + input.substring(0,3) + ') ' + input.substring(3,6); }
+            else { e.target.value = '(' + input.substring(0,3) + ') ' + input.substring(3,6) + '-' + input.substring(6,10); }
+        });
+
+        toggleRegPassword.addEventListener('click', () => {
+            const field = document.getElementById('newShopPassword');
+            if (field.type === 'password') {
+                field.type = 'text'; toggleRegPassword.innerText = 'Hide'; field.classList.remove('tracking-widest');
+            } else {
+                field.type = 'password'; toggleRegPassword.innerText = 'Show'; field.classList.add('tracking-widest');
+            }
+        });
+
+        toggleRegPasswordConfirm.addEventListener('click', () => {
+            const field = document.getElementById('newShopPasswordConfirm');
+            if (field.type === 'password') {
+                field.type = 'text'; toggleRegPasswordConfirm.innerText = 'Hide'; field.classList.remove('tracking-widest');
+            } else {
+                field.type = 'password'; toggleRegPasswordConfirm.innerText = 'Show'; field.classList.add('tracking-widest');
+            }
+        });
+
+        if (urlShopIdentifier) {
+            globalPhoneIdentity = urlShopIdentifier.replace(/\D/g, '');
+            phoneInput.value = urlShopIdentifier;
+            checkPhoneNumber(globalPhoneIdentity);
+        }
+
+        verifyPhoneBtn.addEventListener('click', () => {
+            const cleanPhone = phoneInput.value.replace(/\D/g, '');
+            if (cleanPhone.length < 10) { alert("Please enter a valid 10-digit phone number."); return; }
+            globalPhoneIdentity = cleanPhone;
+            checkPhoneNumber(cleanPhone);
+        });
+
+        function checkPhoneNumber(phoneNumber) {
+            phoneInput.disabled = true;
+            verifyPhoneBtn.innerText = "Verifying Database..."; verifyPhoneBtn.disabled = true;
+            fetch(`${webAppUrl}?phone=${phoneNumber}&portal=appraisal`)
+                .then(res => res.json())
+                .then(data => {
+                    verifyPhoneBtn.innerText = "Continue"; verifyPhoneBtn.disabled = false;
+                    phoneInput.disabled = false;
+                    phoneStep.classList.add('hidden');
+                    
+                    if (data.exists) {
+                        globalShopName = data.shopName;
+                        if (data.hasPassword) {
+                            welcomeShopName.innerText = `Welcome back, ${globalShopName}!`;
+                            existingShopContainer.classList.remove('hidden');
+                        } else {
+                            regHeaderTitle.innerText = `Welcome ${data.contactName || 'Lead'}! Complete Your Password`;
+                            document.getElementById('newShopName').value = data.shopName || '';
+                            // Note: data.contactName may hold a previously-saved "Year Make Model" string,
+                            // but we don't attempt to re-select it in the Year/Make/Model dropdowns here —
+                            // the customer just re-picks their vehicle if they're completing signup again.
+                            document.getElementById('newShopEmail').value = data.email || '';
+                            document.getElementById('newShopState').value = data.state || '';
+                            if (data.claimsVolume) document.getElementById('newShopClaims').value = data.claimsVolume;
+                            
+                            newShopContainer.classList.remove('hidden');
+                        }
+                    } else {
+                        regHeaderTitle.innerText = "New Customer Registration";
+                        newShopContainer.classList.remove('hidden');
+                    }
+                }).catch(err => { 
+                    alert("Lookup timed out. Please try again."); 
+                    phoneInput.disabled = false;
+                    verifyPhoneBtn.innerText = "Continue"; verifyPhoneBtn.disabled = false; 
+                });
+        }
+
+        function resetToPhoneStep() {
+            existingShopContainer.classList.add('hidden');
+            newShopContainer.classList.add('hidden');
+            phoneStep.classList.remove('hidden');
+            phoneInput.disabled = false;
+            resetAuthMode();
+        }
+        backToPhoneBtn1.addEventListener('click', resetToPhoneStep);
+        backToPhoneBtn2.addEventListener('click', resetToPhoneStep);
+
+        loginBtn.addEventListener('click', () => {
+            const credential = loginPasswordInput.value.trim();
+            if (!credential) { alert(`Please enter your account ${activeAuthMode}.`); return; }
+            loginBtn.innerText = "Authenticating..."; loginBtn.disabled = true;
+
+            const endpoint = activeAuthMode === "password" 
+                ? `${webAppUrl}?phone=${globalPhoneIdentity}&password=${encodeURIComponent(credential)}&portal=appraisal`
+                : webAppUrl;
+
+            const config = activeAuthMode === "password" 
+                ? { method: 'GET' }
+                : { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ portal: "appraisal", action: "verify_otp", shopIdentifier: globalPhoneIdentity, token: credential }) 
+                  };
+
+            fetch(endpoint, config)
+                .then(res => res.json())
+                .then(data => {
+                    loginBtn.innerText = activeAuthMode === "password" ? "Log In" : "Verify Token & Log In";
+                    loginBtn.disabled = false;
+                    
+                    if (data.authenticated) {
+                        if (activeAuthMode === "password") {
+                            cachedPassword = credential;
+                            
+                            if (rememberMeCheckbox.checked) {
+                                localStorage.setItem('ec_appraisal_phone', globalPhoneIdentity);
+                                localStorage.setItem('ec_appraisal_pass', credential);
+                            } else {
+                                localStorage.removeItem('ec_appraisal_phone');
+                                localStorage.removeItem('ec_appraisal_pass');
+                            }
+                        }
+
+                        // 🔑 CHECK IF TEMPORARY PIN REQUIRES PASSWORD RESET
+                        if (data.requiresPasswordChange) {
+                            tempUsedPassword = credential;
+                            pendingClaimsData = data.claims || [];
+                            verificationScreen.classList.add('hidden');
+                            forceResetModal.classList.remove('hidden');
+                        } else {
+                            completeAuthentication(data.claims || []);
+                        }
+                    } else {
+                        alert(data.error || "Invalid password or verification token. Access denied.");
+                    }
+                })
+                .catch(err => {
+                    alert("Authentication error. Please try again.");
+                    loginBtn.innerText = activeAuthMode === "password" ? "Log In" : "Verify Token & Log In";
+                    loginBtn.disabled = false;
+                });
+        });
+
+        // 🔑 MANDATORY FORCE PASSWORD RESET HANDLER
+        saveForceResetBtn.addEventListener('click', () => {
+            const newPass = document.getElementById('forceNewPass').value.trim();
+            const newPassConfirm = document.getElementById('forceNewPassConfirm').value.trim();
+
+            if (!newPass || !newPassConfirm) {
+                alert("Please complete both password fields."); return;
+            }
+            if (newPass !== newPassConfirm) {
+                alert("Passwords do not match. Please verify and try again."); return;
+            }
+
+            saveForceResetBtn.innerText = "Saving New PIN..."; saveForceResetBtn.disabled = true;
+
+            fetch(webAppUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ portal: "appraisal",
+                    action: "changePassword",
+                    shopIdentifier: globalPhoneIdentity,
+                    oldPassword: tempUsedPassword,
+                    newPassword: newPass
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                saveForceResetBtn.innerText = "Save New PIN & Continue"; saveForceResetBtn.disabled = false;
+
+                if (data.success) {
+                    cachedPassword = newPass;
+
+                    if (localStorage.getItem('ec_appraisal_phone')) {
+                        localStorage.setItem('ec_appraisal_pass', newPass);
+                    }
+
+                    forceResetModal.classList.add('hidden');
+                    alert("Your new permanent PIN has been saved successfully!");
+                    completeAuthentication(pendingClaimsData);
+                } else {
+                    alert("Password update failed. Please try again.");
+                }
+            })
+            .catch(err => {
+                alert("Error connecting to security engine.");
+                saveForceResetBtn.innerText = "Save New PIN & Continue"; saveForceResetBtn.disabled = false;
+            });
+        });
+
+        // 💲 PRICING NOTE + DV ELIGIBILITY GATE TOGGLE
+        const APPRAISAL_PRICING_NOTES = {
+            "Diminished Value": "$199 to begin your appraisal. The remaining $299 is due only after the insurance company responds with an offer.",
+            "Total Loss": "$299 flat fee — independent evaluation of your vehicle's fair market value.",
+            "Estate/Probate": "$299 flat fee — official valuation report for probate courts, estate distribution, or tax settlements.",
+            "Bank & Collateral": "$299 flat fee — certified appraisal documentation for lenders and financial institutions.",
+            "IRS Donation": "$299 flat fee — IRS tax-compliant written appraisal for vehicle donations exceeding federal thresholds.",
+            "Divorce/Legal Settlement": "$299 flat fee — unbiased vehicle valuation for marital dissolution or legal proceedings."
+        };
+        const dvEligibilityGate = document.getElementById('dvEligibilityGate');
+        const dvEligibilityWarning = document.getElementById('dvEligibilityWarning');
+        const pricingNote = document.getElementById('pricingNote');
+        const dvMoneyBackBadge = document.getElementById('dvMoneyBackBadge');
+
+        document.getElementById('newShopClaims').addEventListener('change', (e) => {
+            const val = e.target.value;
+            pricingNote.innerText = APPRAISAL_PRICING_NOTES[val] || "";
+            if (val === "Diminished Value") {
+                dvEligibilityGate.classList.remove('hidden');
+                dvMoneyBackBadge.classList.remove('hidden');
+            } else {
+                dvEligibilityGate.classList.add('hidden');
+                dvEligibilityWarning.classList.add('hidden');
+                dvMoneyBackBadge.classList.add('hidden');
+            }
+        });
+
+        registerBtn.addEventListener('click', () => {
+            const newName = document.getElementById('newShopName').value.trim();
+            const newContact = syncVehicleFieldFromSelectors();
+            const newState = document.getElementById('newShopState').value.trim();
+            const newClaims = document.getElementById('newShopClaims').value;
+            const newEmail = document.getElementById('newShopEmail').value.trim();
+            const newPass = document.getElementById('newShopPassword').value.trim();
+            const newPassConfirm = document.getElementById('newShopPasswordConfirm').value.trim();
+            
+            if (!newName || !regVehicleYear.value || !regVehicleMake.value || !regVehicleModel.value || !newState || !newClaims || !newEmail || !newPass || !newPassConfirm) { 
+                alert("Please complete all registration fields, including your vehicle's year, make, and model."); return; 
+            }
+            if (newPass !== newPassConfirm) { alert("Passwords do not match."); return; }
+
+            // 🚫 DIMINISHED VALUE HARD GATE — 3 self-attested checkboxes, plus auto-derived
+            // age/mileage/classic checks computed from the vehicle fields (no checkbox needed for those).
+            if (newClaims === "Diminished Value") {
+                const checks = document.querySelectorAll('.dv-elig-check');
+                const allChecked = Array.from(checks).every(cb => cb.checked);
+                if (!allChecked) {
+                    dvEligibilityWarning.classList.remove('hidden');
+                    dvEligibilityGate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+                if (newState.toUpperCase() === "NE" || newState.toUpperCase() === "MI") {
+                    alert("Diminished Value claims are not offered in Nebraska (NE) or Michigan (MI). Please call 910-333-6001 to discuss other appraisal options for your vehicle.");
+                    return;
+                }
+                const elig = getVehicleEligibility();
+                if (elig.mileage === null) {
+                    alert("Please enter your vehicle's current mileage.");
+                    regVehicleMileage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+                if (elig.ageOk === false || elig.mileageOk === false) {
+                    alert("Diminished Value claims require a vehicle 10 years old or newer with under 100,000 miles. Based on what you entered, this vehicle doesn't meet that criteria — please call 910-333-6001 to discuss other options.");
+                    return;
+                }
+                if (!elig.notClassic) {
+                    alert("We work 100% virtually and can't accept exotic, vintage, classic, or collector cars for Diminished Value claims. Please call 910-333-6001 to discuss other options.");
+                    return;
+                }
+            }
+            
+            registerBtn.innerText = "Creating Account & Logging In..."; registerBtn.disabled = true;
+
+            fetch(webAppUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ portal: "appraisal",
+                    action: "register_shop",
+                    shopIdentifier: globalPhoneIdentity,
+                    newShopName: newName,
+                    newShopContact: newContact,
+                    newShopState: newState,
+                    newShopClaims: newClaims,
+                    newShopEmail: newEmail,
+                    newShopPassword: newPass,
+                    vehicleMileage: regVehicleMileage.value.trim(),
+                    vehicleNotes: document.getElementById('regVehicleNotes').value.trim()
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                registerBtn.innerText = "Create Account & Access Portal"; registerBtn.disabled = false;
+                if (data.success) {
+                    globalShopName = newName;
+                    cachedPassword = newPass;
+
+                    if (rememberMeRegCheckbox.checked) {
+                        localStorage.setItem('ec_appraisal_phone', globalPhoneIdentity);
+                        localStorage.setItem('ec_appraisal_pass', newPass);
+                    }
+
+                    completeAuthentication([]);
+                } else {
+                    alert("Registration failed: " + data.error);
+                }
+            })
+            .catch(err => {
+                alert("Error connecting to registration engine.");
+                registerBtn.innerText = "Create Account & Access Portal"; registerBtn.disabled = false;
+            });
+        });
+
+        function completeAuthentication(claims) {
+            verificationScreen.classList.add('hidden');
+            shopDisplay.innerText = globalShopName;
+            authHeader.classList.remove('hidden');
+            uploadForm.classList.remove('hidden');
+            if (claims) renderClaims(claims);
+            requestAnimationFrame(resizeSignatureCanvas);
+        }
+
+        // 🚪 LOGOUT ENGINE
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('ec_appraisal_phone');
+            localStorage.removeItem('ec_appraisal_pass');
+            cachedPassword = "";
+            location.reload();
+        });
+
+        forgotBtn.addEventListener('click', () => {
+            forgotBtn.innerText = "Mailing PIN..."; forgotBtn.disabled = true;
+            fetch(webAppUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ portal: "appraisal", action: "forgot", shopIdentifier: globalPhoneIdentity })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Temporary PIN generated! Check your email inbox. Use that PIN to log in, and you will be prompted to set a new password.");
+                    forgotBtn.innerText = "PIN Emailed";
+                } else {
+                    alert("PIN Retrieval Failed: " + data.error);
+                    forgotBtn.innerText = "Forgot PIN?"; forgotBtn.disabled = false;
+                }
+            }).catch(err => { 
+                alert("PIN Retrieval Network Interruption.");
+                forgotBtn.innerText = "Forgot PIN?"; forgotBtn.disabled = false; 
+            });
+        });
+
+        otpRequestBtn.addEventListener('click', () => {
+            if (activeAuthMode === "password") {
+                otpRequestBtn.innerText = "Sending..."; otpRequestBtn.disabled = true;
+                fetch(webAppUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ portal: "appraisal", action: "request_otp_email", shopIdentifier: globalPhoneIdentity })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert("A 6-digit access token has been generated and emailed to your inbox.");
+                    activateOtpMode();
+                    otpRequestBtn.innerText = "🔄 Use Password"; otpRequestBtn.disabled = false;
+                })
+                .catch(err => {
+                    alert("Error requesting email token.");
+                    otpRequestBtn.innerText = "📧 Email Code"; otpRequestBtn.disabled = false;
+                });
+            } else { resetAuthMode(); }
+        });
+
+        otpSmsRequestBtn.addEventListener('click', () => {
+            if (activeAuthMode === "password") {
+                otpSmsRequestBtn.innerText = "Texting..."; otpSmsRequestBtn.disabled = true;
+                fetch(webAppUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ portal: "appraisal", action: "request_otp_sms", shopIdentifier: globalPhoneIdentity })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert("A 6-digit verification code has been texted to your cell phone.");
+                    activateOtpMode();
+                    otpSmsRequestBtn.innerText = "💬 Text Code"; otpSmsRequestBtn.disabled = false;
+                })
+                .catch(err => {
+                    alert("Error texting token.");
+                    otpSmsRequestBtn.innerText = "💬 Text Code"; otpSmsRequestBtn.disabled = false;
+                });
+            } else { resetAuthMode(); }
+        });
+
+        function activateOtpMode() {
+            activeAuthMode = "otp";
+            loginLabel.innerText = "6-Digit Verification Token";
+            loginPasswordInput.placeholder = "••••••"; loginPasswordInput.value = "";
+            loginBtn.innerText = "Verify Token & Log In";
+        }
+
+        function resetAuthMode() {
+            activeAuthMode = "password";
+            loginLabel.innerText = "Account PIN";
+            loginPasswordInput.placeholder = "••••"; loginPasswordInput.value = "";
+            loginBtn.innerText = "Log In";
+            otpRequestBtn.innerText = "📧 Email Code"; 
+            otpSmsRequestBtn.innerText = "💬 Text Code";
+        }
+
+        tabUpload.addEventListener('click', () => {
+            tabTrack.className = "text-xs font-bold py-2.5 rounded-lg text-slate-400 hover:text-white cursor-pointer transition";
+            tabUpload.className = "text-xs font-black uppercase tracking-wider py-2.5 rounded-lg bg-brand-blue text-white cursor-pointer shadow-md";
+            trackingScreen.classList.add('hidden'); uploadForm.classList.remove('hidden');
+            requestAnimationFrame(resizeSignatureCanvas);
+        });
+
+        tabTrack.addEventListener('click', () => {
+            tabUpload.className = "text-xs font-bold py-2.5 rounded-lg text-slate-400 hover:text-white cursor-pointer transition";
+            tabTrack.className = "text-xs font-black uppercase tracking-wider py-2.5 rounded-lg bg-brand-blue text-white cursor-pointer shadow-md";
+            uploadForm.classList.add('hidden'); trackingScreen.classList.remove('hidden');
+            refreshClaimsLive(); 
+        });
+
+        toggleChangePassBtn.addEventListener('click', () => { changePasswordPanel.classList.toggle('hidden'); });
+
+        executeChangePassBtn.addEventListener('click', () => {
+            const oldP = document.getElementById('changeOldPass').value.trim();
+            const newP = document.getElementById('changeNewPass').value.trim();
+            if(!oldP || !newP) { alert("Please complete both parameters."); return; }
+            executeChangePassBtn.innerText = "Processing Reset..."; executeChangePassBtn.disabled = true;
+            
+            fetch(webAppUrl, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain' }, 
+                body: JSON.stringify({ portal: "appraisal", action: "changePassword", shopIdentifier: globalPhoneIdentity, oldPassword: oldP, newPassword: newP }) 
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert("Security optimization successful. Your password has been changed successfully.");
+                    document.getElementById('changeOldPass').value = ""; document.getElementById('changeNewPass').value = "";
+                    changePasswordPanel.classList.add('hidden');
+                    cachedPassword = newP;
+
+                    if (localStorage.getItem('ec_appraisal_pass')) {
+                        localStorage.setItem('ec_appraisal_pass', newP);
+                    }
+                } else {
+                    alert("Password change rejected. Verify old parameters.");
+                }
+                executeChangePassBtn.innerText = "CONFIRM SECURITY RESET"; executeChangePassBtn.disabled = false;
+            }).catch(err => { alert("Error connecting to script matrix."); executeChangePassBtn.disabled = false; });
+        });
+
+        // 🔄 ROBUST LIVE CLAIMS REFRESH ENGINE
+        function refreshClaimsLive() {
+            if (!globalPhoneIdentity) return;
+            
+            refreshClaimsLiveBtn.innerText = "⚡ Syncing...";
+            refreshClaimsLiveBtn.disabled = true;
+
+            fetch(webAppUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ portal: "appraisal",
+                    action: "fetch_claims",
+                    shopIdentifier: globalPhoneIdentity,
+                    password: cachedPassword || ""
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.authenticated) {
+                    renderClaims(data.claims || []);
+                } else {
+                    alert(data.error || "Unable to sync claims. Please log in again.");
+                }
+                refreshClaimsLiveBtn.innerText = "🔄 Refresh Live";
+                refreshClaimsLiveBtn.disabled = false;
+            })
+            .catch(err => {
+                refreshClaimsLiveBtn.innerText = "🔄 Refresh Live";
+                refreshClaimsLiveBtn.disabled = false;
+            });
+        }
+
+        refreshClaimsLiveBtn.addEventListener('click', refreshClaimsLive);
+
+        // 📋 DYNAMIC CLAIMS RENDER ENGINE WITH ACTION BUTTONS
+        const CLAIM_STAGES = ["Received", "In Review", "Report Ready", "Awaiting Payment", "Completed"];
+
+        function getStageIndex(statusLower) {
+            if (statusLower.includes('complete') || statusLower.includes('done')) return 4;
+            if (statusLower.includes('awaiting payment') || (statusLower.includes('pay') && !statusLower.includes('paid'))) return 3;
+            if (statusLower.includes('report ready') || statusLower.includes('invoice')) return 2;
+            if (statusLower.includes('review') || statusLower.includes('progress') || statusLower.includes('working')) return 1;
+            return 0;
+        }
+
+        function renderStepper(stageIndex) {
+            let dots = '';
+            CLAIM_STAGES.forEach((label, i) => {
+                const isDone = i <= stageIndex;
+                const isCurrent = i === stageIndex;
+                dots += `
+                    <div class="flex-1 flex flex-col items-center">
+                        <div class="w-full flex items-center">
+                            <div class="flex-1 h-0.5 ${i === 0 ? 'invisible' : (i <= stageIndex ? 'bg-brand-blue' : 'bg-slate-200')}"></div>
+                            <div class="w-2.5 h-2.5 rounded-full flex-shrink-0 ${isDone ? 'bg-brand-blue' : 'bg-slate-200'} ${isCurrent ? 'ring-2 ring-blue-200' : ''}"></div>
+                            <div class="flex-1 h-0.5 ${i === CLAIM_STAGES.length - 1 ? 'invisible' : (i < stageIndex ? 'bg-brand-blue' : 'bg-slate-200')}"></div>
+                        </div>
+                        <span class="text-[8px] font-bold uppercase tracking-wide mt-1 text-center leading-tight ${isCurrent ? 'text-brand-blue' : 'text-slate-400'}">${label}</span>
+                    </div>`;
+            });
+            return `<div class="flex items-start w-full py-1">${dots}</div>`;
+        }
+
+        function renderClaims(claims) {
+            claimsList.innerHTML = "";
+            if (claims.length === 0) {
+                claimsList.innerHTML = `<p class="text-center text-xs text-slate-500 py-6 font-medium">No historical records found.</p>`; return;
+            }
+            claims.forEach(claim => {
+                let badgeColor = "bg-blue-50 text-brand-blue border-blue-200";
+                let statusLower = claim.status ? claim.status.toString().toLowerCase() : "received";
+                const stageIndex = getStageIndex(statusLower);
+
+                if (stageIndex === 1) {
+                    badgeColor = "bg-amber-50 text-brand-gold border-amber-200";
+                } else if (stageIndex === 4) {
+                    badgeColor = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                } else if (stageIndex === 2 || stageIndex === 3) {
+                    badgeColor = "bg-orange-50 text-orange-600 border-orange-200";
+                }
+
+                let completedUrl = claim.completedUrl ? claim.completedUrl.toString().trim() : "";
+                if (completedUrl && !/^https?:\/\//i.test(completedUrl)) completedUrl = 'https://' + completedUrl;
+
+                let invoiceUrl = claim.invoiceUrl ? claim.invoiceUrl.toString().trim() : "";
+                if (invoiceUrl && !/^https?:\/\//i.test(invoiceUrl)) invoiceUrl = 'https://' + invoiceUrl;
+
+                let actionButtonsHtml = "";
+                if (stageIndex === 3) {
+                    // ⚠️ Report is out, but payment is required before anything further proceeds
+                    actionButtonsHtml = `<div class="mt-3 space-y-2">`;
+                    if (completedUrl) {
+                        actionButtonsHtml += `<a href="${completedUrl}" target="_blank" class="block text-center bg-brand-blue hover:bg-brand-blueHover text-white font-black text-xs py-2.5 px-3 rounded-xl shadow-md transition tracking-wider">📂 View Your Appraisal Report</a>`;
+                    }
+                    if (invoiceUrl) {
+                        actionButtonsHtml += `<a href="${invoiceUrl}" target="_blank" class="block text-center bg-brand-gold hover:bg-brand-goldHover text-white font-black text-xs py-2.5 px-3 rounded-xl shadow-md transition tracking-wider">💳 Pay Invoice to Proceed</a>`;
+                    }
+                    actionButtonsHtml += `<p class="text-[10px] font-bold text-orange-600 text-center pt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Your report and invoice were sent in two separate emails — payment is required before we proceed with insurance negotiation.</p>`;
+                    actionButtonsHtml += `</div>`;
+                } else if (stageIndex === 4) {
+                    actionButtonsHtml = `<div class="mt-3 space-y-2">`;
+                    if (completedUrl) {
+                        actionButtonsHtml += `<a href="${completedUrl}" target="_blank" class="block text-center bg-brand-blue hover:bg-brand-blueHover text-white font-black text-xs py-2.5 px-3 rounded-xl shadow-md transition tracking-wider">📂 View / Download Claim Documents</a>`;
+                    }
+                    if (invoiceUrl) {
+                        actionButtonsHtml += `<a href="${invoiceUrl}" target="_blank" class="block text-center bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs py-2.5 px-3 rounded-xl shadow-md transition tracking-wider">💳 View Invoice</a>`;
+                    }
+                    actionButtonsHtml += `</div>`;
+                } else {
+                    actionButtonsHtml = `<p class="mt-2 text-[11px] text-slate-400 italic">⏳ Your appraisal is currently in progress with our team...</p>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = "bg-white border border-slate-200 p-4 rounded-xl flex flex-col justify-between w-full text-left space-y-2 shadow-sm";
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start w-full">
+                        <div class="space-y-0.5 overflow-hidden pr-2">
+                            <h4 class="text-xs font-bold text-slate-700 truncate">Claim #: ${claim.claimNumber || 'File Record'}</h4>
+                            <p class="text-[10px] text-slate-500">Submitted: ${claim.date}</p>
+                        </div>
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border ${badgeColor} uppercase tracking-wider flex-shrink-0">${claim.status || 'Received'}</span>
+                    </div>
+                    ${renderStepper(stageIndex)}
+                    ${claim.notes ? `<p class="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-200"><strong>Notes:</strong> ${claim.notes}</p>` : ''}
+                    ${actionButtonsHtml}
+                `;
+                claimsList.appendChild(card);
+            });
+        }
+
+        function renderFilePreviews() {
+            filePreviewContainer.innerHTML = '';
+            if (selectedFiles.length > 0) {
+                filePreviewContainer.classList.remove('hidden');
+                selectedFiles.forEach((file, index) => {
+                    const row = document.createElement('div');
+                    row.className = "flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs w-full";
+                    
+                    let assetPreview = '';
+                    if (file.type.startsWith('image/')) {
+                        const localUrl = URL.createObjectURL(file);
+                        assetPreview = `<img src="${localUrl}" class="h-8 w-8 object-cover rounded-md border border-slate-700 flex-shrink-0">`;
+                    } else {
+                        assetPreview = `<div class="h-8 w-8 rounded-md bg-white border border-slate-200 flex items-center justify-center text-xs flex-shrink-0">📄</div>`;
+                    }
+
+                    const cleanName = file.name.length > 22 ? file.name.substring(0, 19) + '...' : file.name;
+                    const calculatedSize = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+
+                    row.innerHTML = `
+                        <div class="flex items-center space-x-3 overflow-hidden">
+                            ${assetPreview}
+                            <div class="text-left overflow-hidden">
+                                <p class="font-bold text-slate-700 truncate">${cleanName}</p>
+                                <p class="text-[10px] text-slate-500">${calculatedSize}</p>
+                            </div>
+                        </div>
+                        <button type="button" data-index="${index}" class="remove-file-btn text-[10px] font-bold tracking-wider uppercase text-red-400 hover:text-red-300 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-md transition duration-150">Remove</button>
+                    `;
+                    filePreviewContainer.appendChild(row);
+                });
+            } else { filePreviewContainer.classList.add('hidden'); }
+        }
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                Array.from(fileInput.files).forEach(file => { selectedFiles.push(file); });
+                fileInput.value = ''; renderFilePreviews();
+            }
+        });
+
+        filePreviewContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-file-btn')) {
+                const targetsIndex = parseInt(e.target.getAttribute('data-index'));
+                selectedFiles.splice(targetsIndex, 1); renderFilePreviews();
+            }
+        });
+
+        closeModalBtn.addEventListener('click', () => { successModal.classList.add('hidden'); });
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn'); 
+            btn.disabled = true;
+            
+            if (selectedFiles.length === 0) {
+                alert("Please attach at least one estimate document or photo item before submitting.");
+                btn.disabled = false; return;
+            }
+
+            const presubmitChecks = document.querySelectorAll('.presubmit-check');
+            const allPresubmitChecked = Array.from(presubmitChecks).every(cb => cb.checked);
+            if (!allPresubmitChecked) {
+                alert("Please confirm both items in the 'Before You Submit' checklist before submitting.");
+                btn.disabled = false; return;
+            }
+
+            if (!hasSignature) {
+                alert("Please sign in the signature box to authorize the appraisal before submitting.");
+                btn.disabled = false; return;
+            }
+
+            const typedSigName = document.getElementById('signatureTypedName').value.trim();
+            if (!typedSigName) {
+                alert("Please type your full legal name to confirm your signature.");
+                btn.disabled = false; return;
+            }
+
+            const signatureBase64 = signaturePad.toDataURL('image/png');
+            const vehicleVinValue = document.getElementById('vehicleVin').value.trim();
+
+            let totalCombinedBytes = 0;
+            selectedFiles.forEach(f => totalCombinedBytes += f.size);
+            const FAST_TRACK_LIMIT_BYTES = 25 * 1024 * 1024; 
+
+            btn.innerText = "Submitting Files, Please Wait...";
+            uploadProgressContainer.classList.remove('hidden');
+            uploadProgressBar.style.width = '0%';
+            uploadProgressPercent.innerText = '0%';
+
+            const updateProgressUI = (percent) => {
+                const clamped = Math.min(Math.max(percent, 0), 100);
+                uploadProgressBar.style.width = `${clamped}%`;
+                uploadProgressPercent.innerText = `${clamped}%`;
+            };
+
+            let progressInterval;
+            const startSmoothTicker = (startPercent, maxPercent) => {
+                let current = startPercent;
+                updateProgressUI(current);
+                progressInterval = setInterval(() => {
+                    if (current < maxPercent) {
+                        current += Math.floor(Math.random() * 2) + 1;
+                        updateProgressUI(current);
+                    }
+                }, 250);
+            };
+
+            const stopSmoothTicker = () => {
+                if (progressInterval) clearInterval(progressInterval);
+            };
+
+            try {
+                if (totalCombinedBytes <= FAST_TRACK_LIMIT_BYTES) {
+                    let filesProcessed = 0;
+                    const bundledEncodedFiles = await Promise.all(selectedFiles.map(file => {
+                        return new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                filesProcessed++;
+                                const readPercent = Math.round((filesProcessed / selectedFiles.length) * 20);
+                                updateProgressUI(readPercent);
+                                resolve({ base64: reader.result, filename: file.name, mimeType: file.type });
+                            };
+                            reader.readAsDataURL(file);
+                        });
+                    }));
+
+                    startSmoothTicker(20, 92);
+
+                    const response = await fetch(webAppUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify({ portal: "appraisal",
+                            action: "init_submission",
+                            shopIdentifier: globalPhoneIdentity, 
+                            claimNumber: document.getElementById('claimNumber').value, 
+                            vehicleVin: vehicleVinValue,
+                            notes: document.getElementById('notes').value,
+                            signatureBase64: signatureBase64,
+                            signatureTypedName: typedSigName,
+                            files: bundledEncodedFiles 
+                        })
+                    });
+
+                    stopSmoothTicker();
+                    
+                    const responseData = await response.json();
+                    if (!responseData.success) throw new Error(responseData.error || "Processing failure.");
+
+                } else {
+                    const handshakeResponse = await fetch(webAppUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify({ portal: "appraisal",
+                            action: "init_submission",
+                            shopIdentifier: globalPhoneIdentity, 
+                            claimNumber: document.getElementById('claimNumber').value, 
+                            vehicleVin: vehicleVinValue,
+                            notes: document.getElementById('notes').value,
+                            signatureBase64: signatureBase64,
+                            signatureTypedName: typedSigName
+                        })
+                    });
+                    
+                    const handshakeData = await handshakeResponse.json();
+                    if (!handshakeData.success) throw new Error(handshakeData.error || "Structure mismatch.");
+
+                    const secureFolderId = handshakeData.folderId;
+                    const CHUNK_SIZE = 10 * 1024 * 1024; 
+
+                    let totalGlobalChunks = 0;
+                    for (let i = 0; i < selectedFiles.length; i++) {
+                        totalGlobalChunks += Math.ceil(selectedFiles[i].size / CHUNK_SIZE);
+                    }
+                    let completedGlobalChunks = 0;
+
+                    for (let f = 0; f < selectedFiles.length; f++) {
+                        const currentFile = selectedFiles[f];
+                        const totalChunks = Math.ceil(currentFile.size / CHUNK_SIZE);
+
+                        for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+                            const globalProgressPercent = Math.round((completedGlobalChunks / totalGlobalChunks) * 100);
+                            updateProgressUI(globalProgressPercent);
+
+                            const startByte = chunkIndex * CHUNK_SIZE;
+                            const endByte = Math.min(startByte + CHUNK_SIZE, currentFile.size);
+                            const binarySlice = currentFile.slice(startByte, endByte);
+
+                            const sliceBase64 = await new Promise((resolve) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve(reader.result);
+                                reader.readAsDataURL(binarySlice);
+                            });
+
+                            const chunkResponse = await fetch(webAppUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'text/plain' },
+                                body: JSON.stringify({ portal: "appraisal",
+                                    action: "upload_chunk",
+                                    folderId: secureFolderId,
+                                    filename: currentFile.name,
+                                    mimeType: currentFile.type,
+                                    chunkIndex: chunkIndex,
+                                    totalChunks: totalChunks,
+                                    base64: sliceBase64
+                                })
+                            });
+
+                            const chunkData = await chunkResponse.json();
+                            if (!chunkData.success) throw new Error(chunkData.error || "Chunk failure.");
+                            completedGlobalChunks++;
+                        }
+                    }
+                }
+
+                updateProgressUI(100);
+                successModal.classList.remove('hidden');
+                
+                uploadForm.reset(); 
+                clearSignatureBtn.click();
+                document.querySelectorAll('.presubmit-check').forEach(cb => cb.checked = false);
+                selectedFiles = []; 
+                filePreviewContainer.innerHTML = ''; 
+                filePreviewContainer.classList.add('hidden');
+                uploadProgressContainer.classList.add('hidden');
+                btn.innerText = "Submit Vehicle for Appraisal"; 
+                btn.disabled = false;
+                
+                refreshClaimsLive();
+
+            } catch (err) {
+                stopSmoothTicker();
+                alert('Upload failed: ' + err.message);
+                uploadProgressContainer.classList.add('hidden');
+                btn.innerText = "Submit Vehicle for Appraisal"; 
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
