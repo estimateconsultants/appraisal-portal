@@ -57,13 +57,29 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .animated-hero-bg {
+            background: linear-gradient(-45deg, #dbeafe, #eff6ff, #ffffff, #e0f2fe, #bae6fd);
+            background-size: 400% 400%;
+            animation: gradientShift 10s ease infinite;
+        }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(37, 99, 235, 0.25); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(37, 99, 235, 0.5); }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-brand-blue selection:text-white min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-brand-blue selection:text-white min-h-screen flex flex-col relative">
+
+    <!-- 🎬 MOVING BACKGROUND — same animated gradient + looping video used on the main site -->
+    <div class="animated-hero-bg fixed inset-0 z-0"></div>
+    <video autoplay loop muted playsinline class="fixed inset-0 w-full h-full object-cover opacity-[0.12] pointer-events-none z-0">
+        <source src="https://res.cloudinary.com/kkmwxibm/video/upload/v1786467560/car-bg.mp4" type="video/mp4">
+    </video>
 
     <!-- TOP COVERAGE BANNER (matches main site) -->
     <div class="bg-white border-b border-slate-200 text-[11px] text-slate-700 py-2 px-4 text-center">
@@ -118,12 +134,12 @@
         <!-- SCREEN 1: LOGIN & REGISTRATION GATEWAY -->
         <div id="verificationScreen" class="w-full space-y-4">
             
-            <!-- STEP 1: Phone Lookup -->
+            <!-- STEP 1: Email Lookup -->
             <div id="phoneStep" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-brand-blue tracking-widest mb-1.5 pl-1">Your Phone Number</label>
-                    <input type="tel" id="verificationPhone" placeholder="(555) 555-5555" maxlength="14" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-center text-lg font-bold tracking-wide focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue shadow-inner placeholder:text-slate-400">
-                    <p class="text-[11px] text-slate-500 mt-3 text-center font-normal tracking-wide leading-relaxed px-2">By entering your number, you agree to text updates and messages. Msg and data rates may apply.</p>
+                    <label class="block text-xs font-bold uppercase text-brand-blue tracking-widest mb-1.5 pl-1">Your Email Address</label>
+                    <input type="email" id="verificationPhone" placeholder="you@email.com" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-center text-lg font-bold tracking-wide focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue shadow-inner placeholder:text-slate-400">
+                    <p class="text-[11px] text-slate-500 mt-3 text-center font-normal tracking-wide leading-relaxed px-2">We'll email you updates about your appraisal. No texts, ever.</p>
                 </div>
 
                 <!-- ⚡ AUTO-LOGIN LOADING BAR PANEL -->
@@ -164,10 +180,9 @@
                 <button type="button" id="loginBtn" class="w-full bg-brand-blue hover:bg-brand-blueHover active:scale-[0.98] text-white font-black uppercase tracking-wider p-4 rounded-xl shadow-md shadow-blue-500/20">Log In</button>
 
                 <div class="grid grid-cols-2 gap-x-2 gap-y-3 text-center border-t border-slate-200 pt-4">
-                    <button type="button" id="otpRequestBtn" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide truncate text-left pl-1">📧 Email Code</button>
-                    <button type="button" id="otpSmsRequestBtn" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide truncate text-right pr-1">💬 Text Code</button>
-                    <button type="button" id="forgotBtn" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide truncate text-left pl-1">🔑 Forgot PIN?</button>
-                    <button type="button" id="backToPhoneBtn1" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide truncate text-right pr-1">← Change Phone</button>
+                    <button type="button" id="otpRequestBtn" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide truncate text-left pl-1">📧 Email Me a Code</button>
+                    <button type="button" id="forgotBtn" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide truncate text-right pr-1">🔑 Forgot PIN?</button>
+                    <button type="button" id="backToPhoneBtn1" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide truncate text-left pl-1 col-span-2">← Change Email</button>
                 </div>
             </div>
             
@@ -248,8 +263,7 @@
                         <p id="dvEligibilityWarning" class="hidden text-[11px] font-bold text-red-600 pt-1"><i class="fa-solid fa-ban mr-1"></i> You must confirm all three items above to submit a Diminished Value claim. If any don't apply to you, please call us at 910-333-6001 to discuss other options.</p>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Email Address</label>
-                        <input type="email" id="newShopEmail" placeholder="you@email.com" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-brand-blue">
+                        <input type="hidden" id="newShopEmail">
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Create a Account PIN</label>
@@ -278,7 +292,7 @@
                 <button type="button" id="registerBtn" class="w-full bg-brand-blue hover:bg-brand-blueHover active:scale-[0.98] text-white font-black uppercase tracking-wider p-4 rounded-xl shadow-md shadow-blue-500/20">Create Account & Access Portal</button>
                 
                 <div class="text-center pt-1">
-                    <button type="button" id="backToPhoneBtn2" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide">← Change Phone Number</button>
+                    <button type="button" id="backToPhoneBtn2" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide">← Change Email Address</button>
                 </div>
             </div>
 
@@ -681,7 +695,6 @@
         const toggleRegPassword = document.getElementById('toggleRegPassword');
         const toggleRegPasswordConfirm = document.getElementById('toggleRegPasswordConfirm');
         const otpRequestBtn = document.getElementById('otpRequestBtn');
-        const otpSmsRequestBtn = document.getElementById('otpSmsRequestBtn');
 
         const uploadProgressContainer = document.getElementById('uploadProgressContainer');
         const uploadProgressBar = document.getElementById('uploadProgressBar');
@@ -975,12 +988,7 @@
                 globalPhoneIdentity = savedPhone;
                 cachedPassword = savedPass;
                 
-                let formattedDigits = savedPhone.replace(/\D/g, '');
-                if (formattedDigits.length === 10) {
-                    phoneInput.value = '(' + formattedDigits.substring(0,3) + ') ' + formattedDigits.substring(3,6) + '-' + formattedDigits.substring(6,10);
-                } else {
-                    phoneInput.value = savedPhone;
-                }
+                phoneInput.value = savedPhone;
                 phoneInput.disabled = true;
                 verifyPhoneBtn.innerText = "Logging In...";
                 verifyPhoneBtn.disabled = true;
@@ -999,11 +1007,11 @@
                     }
                 }, 150);
 
-                fetch(`${webAppUrl}?phone=${savedPhone}&password=${encodeURIComponent(savedPass)}&portal=appraisal`)
+                fetch(`${webAppUrl}?portalEmailCheck=${encodeURIComponent(savedPhone)}&password=${encodeURIComponent(savedPass)}`)
                     .then(res => res.json())
                     .then(data => {
                         if (data.authenticated) {
-                            fetch(`${webAppUrl}?phone=${savedPhone}&portal=appraisal`)
+                            fetch(`${webAppUrl}?portalEmailCheck=${encodeURIComponent(savedPhone)}`)
                                 .then(r => r.json())
                                 .then(pData => {
                                     clearInterval(autoLoginInterval);
@@ -1044,14 +1052,8 @@
             }
         });
 
-        phoneInput.addEventListener('input', (e) => {
-            let input = e.target.value.replace(/\D/g, '').substring(0, 10); 
-            let size = input.length;
-            if (size === 0) { e.target.value = ''; }
-            else if (size < 4) { e.target.value = '(' + input; }
-            else if (size < 7) { e.target.value = '(' + input.substring(0,3) + ') ' + input.substring(3,6); }
-            else { e.target.value = '(' + input.substring(0,3) + ') ' + input.substring(3,6) + '-' + input.substring(6,10); }
-        });
+        // No input formatting needed for email — the browser's built-in
+        // type="email" validation handles basic format checking.
 
         toggleRegPassword.addEventListener('click', () => {
             const field = document.getElementById('newShopPassword');
@@ -1072,22 +1074,22 @@
         });
 
         if (urlShopIdentifier) {
-            globalPhoneIdentity = urlShopIdentifier.replace(/\D/g, '');
+            globalPhoneIdentity = urlShopIdentifier.trim().toLowerCase();
             phoneInput.value = urlShopIdentifier;
             checkPhoneNumber(globalPhoneIdentity);
         }
 
         verifyPhoneBtn.addEventListener('click', () => {
-            const cleanPhone = phoneInput.value.replace(/\D/g, '');
-            if (cleanPhone.length < 10) { alert("Please enter a valid 10-digit phone number."); return; }
-            globalPhoneIdentity = cleanPhone;
-            checkPhoneNumber(cleanPhone);
+            const cleanEmail = phoneInput.value.trim().toLowerCase();
+            if (!cleanEmail || cleanEmail.indexOf('@') === -1 || cleanEmail.indexOf('.') === -1) { alert("Please enter a valid email address."); return; }
+            globalPhoneIdentity = cleanEmail;
+            checkPhoneNumber(cleanEmail);
         });
 
         function checkPhoneNumber(phoneNumber) {
             phoneInput.disabled = true;
             verifyPhoneBtn.innerText = "Verifying Database..."; verifyPhoneBtn.disabled = true;
-            fetch(`${webAppUrl}?phone=${phoneNumber}&portal=appraisal`)
+            fetch(`${webAppUrl}?portalEmailCheck=${encodeURIComponent(phoneNumber)}`)
                 .then(res => res.json())
                 .then(data => {
                     verifyPhoneBtn.innerText = "Continue"; verifyPhoneBtn.disabled = false;
@@ -1138,7 +1140,7 @@
             loginBtn.innerText = "Authenticating..."; loginBtn.disabled = true;
 
             const endpoint = activeAuthMode === "password" 
-                ? `${webAppUrl}?phone=${globalPhoneIdentity}&password=${encodeURIComponent(credential)}&portal=appraisal`
+                ? `${webAppUrl}?portalEmailCheck=${encodeURIComponent(globalPhoneIdentity)}&password=${encodeURIComponent(credential)}`
                 : webAppUrl;
 
             const config = activeAuthMode === "password" 
@@ -1146,7 +1148,7 @@
                 : { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ portal: "appraisal", action: "verify_otp", shopIdentifier: globalPhoneIdentity, token: credential }) 
+                    body: JSON.stringify({ action: "verify_otp", shopIdentifier: globalPhoneIdentity, token: credential }) 
                   };
 
             fetch(endpoint, config)
@@ -1205,7 +1207,7 @@
             fetch(webAppUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ portal: "appraisal",
+                body: JSON.stringify({
                     action: "changePassword",
                     shopIdentifier: globalPhoneIdentity,
                     oldPassword: tempUsedPassword,
@@ -1268,7 +1270,8 @@
             const newContact = syncVehicleFieldFromSelectors();
             const newState = document.getElementById('newShopState').value.trim();
             const newClaims = document.getElementById('newShopClaims').value;
-            const newEmail = document.getElementById('newShopEmail').value.trim();
+            const newEmail = globalPhoneIdentity;
+            document.getElementById('newShopEmail').value = newEmail;
             const newPass = document.getElementById('newShopPassword').value.trim();
             const newPassConfirm = document.getElementById('newShopPasswordConfirm').value.trim();
             
@@ -1312,7 +1315,7 @@
             fetch(webAppUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ portal: "appraisal",
+                body: JSON.stringify({
                     action: "register_shop",
                     shopIdentifier: globalPhoneIdentity,
                     newShopName: newName,
@@ -1370,7 +1373,7 @@
             fetch(webAppUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ portal: "appraisal", action: "forgot", shopIdentifier: globalPhoneIdentity })
+                body: JSON.stringify({ action: "forgot", shopIdentifier: globalPhoneIdentity })
             })
             .then(res => res.json())
             .then(data => {
@@ -1393,7 +1396,7 @@
                 fetch(webAppUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ portal: "appraisal", action: "request_otp_email", shopIdentifier: globalPhoneIdentity })
+                    body: JSON.stringify({ action: "request_otp_email", shopIdentifier: globalPhoneIdentity })
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -1403,28 +1406,7 @@
                 })
                 .catch(err => {
                     alert("Error requesting email token.");
-                    otpRequestBtn.innerText = "📧 Email Code"; otpRequestBtn.disabled = false;
-                });
-            } else { resetAuthMode(); }
-        });
-
-        otpSmsRequestBtn.addEventListener('click', () => {
-            if (activeAuthMode === "password") {
-                otpSmsRequestBtn.innerText = "Texting..."; otpSmsRequestBtn.disabled = true;
-                fetch(webAppUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ portal: "appraisal", action: "request_otp_sms", shopIdentifier: globalPhoneIdentity })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    alert("A 6-digit verification code has been texted to your cell phone.");
-                    activateOtpMode();
-                    otpSmsRequestBtn.innerText = "💬 Text Code"; otpSmsRequestBtn.disabled = false;
-                })
-                .catch(err => {
-                    alert("Error texting token.");
-                    otpSmsRequestBtn.innerText = "💬 Text Code"; otpSmsRequestBtn.disabled = false;
+                    otpRequestBtn.innerText = "📧 Email Me a Code"; otpRequestBtn.disabled = false;
                 });
             } else { resetAuthMode(); }
         });
@@ -1441,8 +1423,7 @@
             loginLabel.innerText = "Account PIN";
             loginPasswordInput.placeholder = "••••"; loginPasswordInput.value = "";
             loginBtn.innerText = "Log In";
-            otpRequestBtn.innerText = "📧 Email Code"; 
-            otpSmsRequestBtn.innerText = "💬 Text Code";
+            otpRequestBtn.innerText = "📧 Email Me a Code"; 
         }
 
         tabUpload.addEventListener('click', () => {
@@ -1470,7 +1451,7 @@
             fetch(webAppUrl, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'text/plain' }, 
-                body: JSON.stringify({ portal: "appraisal", action: "changePassword", shopIdentifier: globalPhoneIdentity, oldPassword: oldP, newPassword: newP }) 
+                body: JSON.stringify({ action: "changePassword", shopIdentifier: globalPhoneIdentity, oldPassword: oldP, newPassword: newP }) 
             })
             .then(res => res.json())
             .then(data => {
@@ -1500,7 +1481,7 @@
             fetch(webAppUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ portal: "appraisal",
+                body: JSON.stringify({
                     action: "fetch_claims",
                     shopIdentifier: globalPhoneIdentity,
                     password: cachedPassword || ""
@@ -1754,7 +1735,7 @@
                     const response = await fetch(webAppUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'text/plain' },
-                        body: JSON.stringify({ portal: "appraisal",
+                        body: JSON.stringify({
                             action: "init_submission",
                             shopIdentifier: globalPhoneIdentity, 
                             claimNumber: document.getElementById('claimNumber').value, 
@@ -1775,7 +1756,7 @@
                     const handshakeResponse = await fetch(webAppUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'text/plain' },
-                        body: JSON.stringify({ portal: "appraisal",
+                        body: JSON.stringify({
                             action: "init_submission",
                             shopIdentifier: globalPhoneIdentity, 
                             claimNumber: document.getElementById('claimNumber').value, 
@@ -1819,7 +1800,7 @@
                             const chunkResponse = await fetch(webAppUrl, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'text/plain' },
-                                body: JSON.stringify({ portal: "appraisal",
+                                body: JSON.stringify({
                                     action: "upload_chunk",
                                     folderId: secureFolderId,
                                     filename: currentFile.name,
