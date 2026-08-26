@@ -471,6 +471,13 @@
                 </label>
             </div>
 
+            <!-- ⏰ WHAT HAPPENS NEXT -->
+            <div class="w-full bg-amber-50 border border-amber-200 rounded-xl p-3.5">
+                <p class="text-[11px] text-slate-700 leading-relaxed">
+                    <i class="fa-solid fa-clock text-brand-gold mr-1"></i> <strong>Within about 5 minutes</strong> of submitting, you'll receive an email with your Intake Form to review and sign<span id="dvInvoiceNote" class="hidden"> along with your $199 retainer invoice</span>. <strong>Both need to be completed before we can proceed</strong> with your appraisal.
+                </p>
+            </div>
+
             <!-- Progress Status Panel -->
             <div id="uploadProgressContainer" class="hidden w-full bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
                 <div class="flex items-center justify-between">
@@ -800,6 +807,7 @@
 
         // Global State Variables
         let globalShopName = "", globalPhoneIdentity = "", isNewShop = false;
+        let globalAppraisalType = "";
         let selectedFiles = [];
         let activeAuthMode = "password"; 
         let cachedPassword = ""; 
@@ -1033,6 +1041,7 @@
                                         autoLoginProgressContainer.classList.add('hidden');
                                         
                                         // 🔑 CHECK IF TEMPORARY PIN REQUIRES PASSWORD RESET
+                                        globalAppraisalType = pData.claimsVolume || globalAppraisalType;
                                         if (data.requiresPasswordChange) {
                                             tempUsedPassword = savedPass;
                                             pendingClaimsData = data.claims || [];
@@ -1183,6 +1192,7 @@
                         }
 
                         // 🔑 CHECK IF TEMPORARY PIN REQUIRES PASSWORD RESET
+                        globalAppraisalType = data.claimsVolume || globalAppraisalType;
                         if (data.requiresPasswordChange) {
                             tempUsedPassword = credential;
                             pendingClaimsData = data.claims || [];
@@ -1346,6 +1356,7 @@
                 if (data.success) {
                     globalShopName = newName;
                     cachedPassword = newPass;
+                    globalAppraisalType = newClaims;
 
                     if (rememberMeRegCheckbox.checked) {
                         localStorage.setItem('ec_appraisal_phone', globalPhoneIdentity);
@@ -1368,6 +1379,7 @@
             shopDisplay.innerText = globalShopName;
             authHeader.classList.remove('hidden');
             uploadForm.classList.remove('hidden');
+            document.getElementById('dvInvoiceNote').classList.toggle('hidden', globalAppraisalType !== "Diminished Value");
             if (claims) renderClaims(claims);
         }
 
