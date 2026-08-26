@@ -396,23 +396,12 @@
 
             <!-- 🧾 CLAIM DETAILS -->
             <div>
-                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Insurance Claim # (if known)</label>
-                <input type="text" id="claimNumber" placeholder="e.g., 123456-1 (leave blank if you don't have one yet)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Insurance Claim #</label>
+                <input type="text" id="claimNumber" required placeholder="e.g., 123456-1" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
             </div>
             <div>
                 <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Insurance Carrier</label>
                 <input type="text" id="intakeCarrier" placeholder="e.g., State Farm" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
-            </div>
-            <div>
-                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Claim Type</label>
-                <select id="intakePartyType" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue cursor-pointer">
-                    <option value="3rd Party">3rd-Party (filing against the other driver's insurer)</option>
-                    <option value="1st Party">1st-Party (filing against my own insurer)</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">At-Fault Driver's Name</label>
-                <input type="text" id="intakeAtFaultDriver" placeholder="Leave blank if not applicable" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
             </div>
             <div class="grid grid-cols-2 gap-2">
                 <div>
@@ -1693,7 +1682,19 @@
                 if (r.ModelYear) document.getElementById('intakeYear').value = r.ModelYear;
                 if (r.Make) document.getElementById('intakeMake').value = r.Make;
                 if (r.Model) document.getElementById('intakeModel').value = r.Model;
-                if (r.Trim) document.getElementById('intakeTrim').value = r.Trim;
+
+                // NHTSA's decoder sometimes can't pin down a single trim from the VIN
+                // alone and returns a comma-separated list of possibilities instead
+                // (e.g. "Value, SEL, Sport, Limited, Ultimate, Night") — in that case
+                // leave the field blank for the customer to fill in rather than
+                // dumping the whole list in. Only auto-fill when it's one clean value.
+                const trimField = document.getElementById('intakeTrim');
+                if (r.Trim && r.Trim.indexOf(',') === -1) {
+                    trimField.value = r.Trim.trim();
+                } else {
+                    trimField.value = '';
+                }
+
                 statusEl.className = "text-[10px] text-emerald-600 mt-1";
                 statusEl.innerText = "✓ Decoded — please double-check the fields below.";
             } catch (err) {
@@ -1704,7 +1705,7 @@
 
         function buildIntakePayload() {
             return {
-                vin: vehicleVinValue,
+                vin: document.getElementById('vehicleVin').value.trim(),
                 year: document.getElementById('intakeYear').value.trim(),
                 make: document.getElementById('intakeMake').value.trim(),
                 model: document.getElementById('intakeModel').value.trim(),
@@ -1717,8 +1718,7 @@
                 address: document.getElementById('intakeAddress').value.trim(),
                 mailingAddress: document.getElementById('intakeMailingAddress').value.trim(),
                 insuranceCarrier: document.getElementById('intakeCarrier').value.trim(),
-                partyType: document.getElementById('intakePartyType').value,
-                atFaultDriver: document.getElementById('intakeAtFaultDriver').value.trim(),
+                partyType: "3rd Party", // already certified during the DV eligibility checklist at registration
                 dateOfLoss: document.getElementById('intakeDateOfLoss').value,
                 dateRepaired: document.getElementById('intakeDateRepaired').value,
                 adjusterName: document.getElementById('intakeAdjusterName').value.trim(),
@@ -1732,6 +1732,11 @@
             const btn = document.getElementById('submitBtn'); 
             btn.disabled = true;
             
+            if (!document.getElementById('claimNumber').value.trim()) {
+                alert("Please enter your Insurance Claim #.");
+                btn.disabled = false; return;
+            }
+
             if (selectedFiles.length === 0) {
                 alert("Please attach at least one estimate document or photo item before submitting.");
                 btn.disabled = false; return;
@@ -1744,7 +1749,6 @@
                 btn.disabled = false; return;
             }
 
-            const vehicleVinValue = document.getElementById('vehicleVin').value.trim();
 
             let totalCombinedBytes = 0;
             selectedFiles.forEach(f => totalCombinedBytes += f.size);
