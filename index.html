@@ -254,7 +254,7 @@
                         </label>
                         <label class="flex items-start gap-2 cursor-pointer select-none">
                             <input type="checkbox" class="dv-elig-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
-                            <span class="text-[11px] text-slate-700 leading-snug">My vehicle has <strong>no accident</strong> history.</span>
+                            <span class="text-[11px] text-slate-700 leading-snug">My vehicle has <strong>no accident history</strong>.</span>
                         </label>
                         <label class="flex items-start gap-2 cursor-pointer select-none">
                             <input type="checkbox" class="dv-elig-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
@@ -323,14 +323,122 @@
 
         <!-- TAB A: Upload Form -->
         <form id="uploadForm" class="w-full space-y-4 hidden">
+
+            <!-- 🚗 VIN + DECODE -->
+            <div>
+                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">VIN (Vehicle Identification Number)</label>
+                <div class="flex gap-2">
+                    <input type="text" id="vehicleVin" maxlength="17" placeholder="17-character VIN" class="flex-1 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 uppercase tracking-wide focus:outline-none focus:border-brand-blue">
+                    <button type="button" id="decodeVinBtn" class="px-3 bg-brand-blue hover:bg-brand-blueHover text-white text-[10px] font-black uppercase tracking-wide rounded-xl whitespace-nowrap">Decode</button>
+                </div>
+                <p id="vinDecodeStatus" class="text-[10px] text-slate-400 mt-1"></p>
+            </div>
+
+            <!-- Vehicle details — auto-filled by VIN decode above, editable if anything's wrong/missing -->
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Year</label>
+                    <input type="text" id="intakeYear" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Make</label>
+                    <input type="text" id="intakeMake" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Model</label>
+                    <input type="text" id="intakeModel" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Trim</label>
+                    <input type="text" id="intakeTrim" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Color</label>
+                    <input type="text" id="intakeColor" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">License Plate</label>
+                    <input type="text" id="intakePlate" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Registration State</label>
+                    <input type="text" id="intakeRegState" maxlength="2" placeholder="e.g. TX" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 uppercase focus:outline-none focus:border-brand-blue">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Title Status</label>
+                    <select id="intakeTitleStatus" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue cursor-pointer">
+                        <option value="">Select...</option>
+                        <option value="Clean">Clean</option>
+                        <option value="Salvage">Salvage</option>
+                        <option value="Rebuilt">Rebuilt</option>
+                        <option value="Flood">Flood</option>
+                        <option value="Lemon">Lemon</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 👤 CONTACT INFO -->
+            <div>
+                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Phone Number</label>
+                <input type="tel" id="intakePhone" placeholder="(555) 555-5555" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Address</label>
+                <input type="text" id="intakeAddress" placeholder="Street, City, State, ZIP" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Mailing Address <span class="normal-case font-medium text-slate-400">(if different)</span></label>
+                <input type="text" id="intakeMailingAddress" placeholder="Leave blank if same as above" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+            </div>
+
+            <!-- 🧾 CLAIM DETAILS -->
             <div>
                 <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Insurance Claim # (if known)</label>
                 <input type="text" id="claimNumber" placeholder="e.g., 123456-1 (leave blank if you don't have one yet)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">VIN (Vehicle Identification Number)</label>
-                <input type="text" id="vehicleVin" maxlength="17" placeholder="17-character VIN" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 uppercase tracking-wide focus:outline-none focus:border-brand-blue">
+                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Insurance Carrier</label>
+                <input type="text" id="intakeCarrier" placeholder="e.g., State Farm" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
             </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Claim Type</label>
+                <select id="intakePartyType" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue cursor-pointer">
+                    <option value="3rd Party">3rd-Party (filing against the other driver's insurer)</option>
+                    <option value="1st Party">1st-Party (filing against my own insurer)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">At-Fault Driver's Name</label>
+                <input type="text" id="intakeAtFaultDriver" placeholder="Leave blank if not applicable" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Date of Loss</label>
+                    <input type="date" id="intakeDateOfLoss" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Date Repaired</label>
+                    <input type="date" id="intakeDateRepaired" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+                </div>
+            </div>
+
+            <!-- 📋 ADJUSTER INFO -->
+            <div>
+                <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Adjuster Name <span class="normal-case font-medium text-slate-400">(if known)</span></label>
+                <input type="text" id="intakeAdjusterName" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Adjuster Phone</label>
+                    <input type="tel" id="intakeAdjusterPhone" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Adjuster Email</label>
+                    <input type="email" id="intakeAdjusterEmail" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+                </div>
+            </div>
+
             <div>
                 <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Specific Notes</label>
                 <textarea id="notes" rows="2" placeholder="Any damaged parts which do not show on estimate or photos/Anything else we should know about the claim." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue resize-none text-xs leading-relaxed"></textarea>
@@ -368,7 +476,7 @@
                 </label>
                 <label class="flex items-start gap-2 cursor-pointer select-none">
                     <input type="checkbox" class="presubmit-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
-                    <span class="text-[11px] text-slate-700 leading-snug">My vehicle has <strong>no prior accident history</strong>.</span>
+                    <span class="text-[11px] text-slate-700 leading-snug">I have uploaded the final estimate copy from the body shop/insurer, or will email it to <a href="mailto:kevin@estimateconsultants.com" class="text-brand-blue underline font-semibold">kevin@estimateconsultants.com</a>.</span>
                 </label>
             </div>
 
@@ -383,25 +491,6 @@
                 </div>
                 <div class="w-full bg-white h-2 rounded-full overflow-hidden border border-slate-200">
                     <div id="uploadProgressBar" class="bg-gradient-to-r from-brand-blue to-blue-400 h-full w-0 transition-all duration-150 ease-out"></div>
-                </div>
-            </div>
-
-            <!-- ✍️ AUTHORIZATION & E-SIGNATURE -->
-            <div class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
-                <p class="text-[11px] text-slate-500 leading-relaxed">
-                    By signing below, I authorize Estimate Consultants to prepare an independent vehicle appraisal report for the vehicle described above, based on the documents and photos I provide.
-                </p>
-                <div class="relative w-full bg-white rounded-lg overflow-hidden border border-slate-600" style="touch-action: none;">
-                    <canvas id="signaturePad" class="w-full h-[120px] block cursor-crosshair"></canvas>
-                    <p id="signaturePlaceholder" class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-wide pointer-events-none">Sign Here</p>
-                </div>
-                <div class="flex items-center justify-between">
-                    <button type="button" id="clearSignatureBtn" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide">Clear Signature</button>
-                    <span id="signatureStatus" class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Not Signed</span>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold uppercase text-brand-blue tracking-wider mb-1">Type Full Legal Name to Confirm</label>
-                    <input type="text" id="signatureTypedName" placeholder="e.g., Jane Smith" class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
                 </div>
             </div>
 
@@ -854,74 +943,6 @@
         regVehicleMileage.addEventListener('input', updateEligibilitySnapshot);
         regVehicleMake.addEventListener('change', updateEligibilitySnapshot);
 
-        // ✍️ SIGNATURE PAD ENGINE
-        const signaturePad = document.getElementById('signaturePad');
-        const signaturePadCtx = signaturePad.getContext('2d');
-        const signaturePlaceholder = document.getElementById('signaturePlaceholder');
-        const clearSignatureBtn = document.getElementById('clearSignatureBtn');
-        const signatureStatus = document.getElementById('signatureStatus');
-        let hasSignature = false;
-        let isDrawing = false;
-
-        function resizeSignatureCanvas() {
-            const ratio = Math.max(window.devicePixelRatio || 1, 1);
-            const rect = signaturePad.getBoundingClientRect();
-            if (rect.width === 0) return;
-            const priorImage = hasSignature ? signaturePad.toDataURL('image/png') : null;
-            signaturePad.width = rect.width * ratio;
-            signaturePad.height = rect.height * ratio;
-            signaturePadCtx.scale(ratio, ratio);
-            signaturePadCtx.lineWidth = 2.2;
-            signaturePadCtx.lineCap = 'round';
-            signaturePadCtx.strokeStyle = '#0f172a';
-            if (priorImage) {
-                const img = new Image();
-                img.onload = () => signaturePadCtx.drawImage(img, 0, 0, rect.width, rect.height);
-                img.src = priorImage;
-            }
-        }
-
-        function getSignaturePoint(evt) {
-            const rect = signaturePad.getBoundingClientRect();
-            return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
-        }
-
-        signaturePad.addEventListener('pointerdown', (evt) => {
-            isDrawing = true;
-            hasSignature = true;
-            signaturePlaceholder.classList.add('hidden');
-            signatureStatus.innerText = "Signed ✓";
-            signatureStatus.classList.remove('text-slate-500');
-            signatureStatus.classList.add('text-emerald-400');
-            const p = getSignaturePoint(evt);
-            signaturePadCtx.beginPath();
-            signaturePadCtx.moveTo(p.x, p.y);
-            signaturePad.setPointerCapture(evt.pointerId);
-        });
-
-        signaturePad.addEventListener('pointermove', (evt) => {
-            if (!isDrawing) return;
-            const p = getSignaturePoint(evt);
-            signaturePadCtx.lineTo(p.x, p.y);
-            signaturePadCtx.stroke();
-        });
-
-        ['pointerup', 'pointerleave', 'pointercancel'].forEach(evtName => {
-            signaturePad.addEventListener(evtName, () => { isDrawing = false; });
-        });
-
-        clearSignatureBtn.addEventListener('click', () => {
-            const rect = signaturePad.getBoundingClientRect();
-            signaturePadCtx.clearRect(0, 0, rect.width, rect.height);
-            hasSignature = false;
-            signaturePlaceholder.classList.remove('hidden');
-            signatureStatus.innerText = "Not Signed";
-            signatureStatus.classList.remove('text-emerald-400');
-            signatureStatus.classList.add('text-slate-500');
-        });
-
-        window.addEventListener('resize', resizeSignatureCanvas);
-
         // 📸 ULTRA-HIGH-RESOLUTION CONTINUOUS CAMERA ENGINE
         openCameraBtn.addEventListener('click', async () => {
             try {
@@ -1357,7 +1378,6 @@
             authHeader.classList.remove('hidden');
             uploadForm.classList.remove('hidden');
             if (claims) renderClaims(claims);
-            requestAnimationFrame(resizeSignatureCanvas);
         }
 
         // 🚪 LOGOUT ENGINE
@@ -1430,7 +1450,6 @@
             tabTrack.className = "text-xs font-bold py-2.5 rounded-lg text-slate-400 hover:text-white cursor-pointer transition";
             tabUpload.className = "text-xs font-black uppercase tracking-wider py-2.5 rounded-lg bg-brand-blue text-white cursor-pointer shadow-md";
             trackingScreen.classList.add('hidden'); uploadForm.classList.remove('hidden');
-            requestAnimationFrame(resizeSignatureCanvas);
         });
 
         tabTrack.addEventListener('click', () => {
@@ -1652,6 +1671,60 @@
 
         closeModalBtn.addEventListener('click', () => { successModal.classList.add('hidden'); });
 
+        // 🔎 VIN DECODE — free NHTSA vPIC API, no key needed. Auto-fills
+        // Year/Make/Model/Trim from the VIN so it only needs typing once.
+        document.getElementById('decodeVinBtn').addEventListener('click', async () => {
+            const vin = document.getElementById('vehicleVin').value.trim().toUpperCase();
+            const statusEl = document.getElementById('vinDecodeStatus');
+            if (vin.length !== 17) {
+                statusEl.className = "text-[10px] text-red-500 mt-1";
+                statusEl.innerText = "VIN must be exactly 17 characters.";
+                return;
+            }
+            statusEl.className = "text-[10px] text-slate-400 mt-1";
+            statusEl.innerText = "Decoding...";
+            try {
+                const res = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvalues/${vin}?format=json`);
+                const data = await res.json();
+                const r = data.Results && data.Results[0];
+                if (!r) throw new Error("No data returned.");
+                if (r.ModelYear) document.getElementById('intakeYear').value = r.ModelYear;
+                if (r.Make) document.getElementById('intakeMake').value = r.Make;
+                if (r.Model) document.getElementById('intakeModel').value = r.Model;
+                if (r.Trim) document.getElementById('intakeTrim').value = r.Trim;
+                statusEl.className = "text-[10px] text-emerald-600 mt-1";
+                statusEl.innerText = "✓ Decoded — please double-check the fields below.";
+            } catch (err) {
+                statusEl.className = "text-[10px] text-red-500 mt-1";
+                statusEl.innerText = "Couldn't decode that VIN — please fill in the fields below manually.";
+            }
+        });
+
+        function buildIntakePayload() {
+            return {
+                vin: vehicleVinValue,
+                year: document.getElementById('intakeYear').value.trim(),
+                make: document.getElementById('intakeMake').value.trim(),
+                model: document.getElementById('intakeModel').value.trim(),
+                trim: document.getElementById('intakeTrim').value.trim(),
+                color: document.getElementById('intakeColor').value.trim(),
+                plate: document.getElementById('intakePlate').value.trim(),
+                regState: document.getElementById('intakeRegState').value.trim(),
+                titleStatus: document.getElementById('intakeTitleStatus').value,
+                phone: document.getElementById('intakePhone').value.trim(),
+                address: document.getElementById('intakeAddress').value.trim(),
+                mailingAddress: document.getElementById('intakeMailingAddress').value.trim(),
+                insuranceCarrier: document.getElementById('intakeCarrier').value.trim(),
+                partyType: document.getElementById('intakePartyType').value,
+                atFaultDriver: document.getElementById('intakeAtFaultDriver').value.trim(),
+                dateOfLoss: document.getElementById('intakeDateOfLoss').value,
+                dateRepaired: document.getElementById('intakeDateRepaired').value,
+                adjusterName: document.getElementById('intakeAdjusterName').value.trim(),
+                adjusterPhone: document.getElementById('intakeAdjusterPhone').value.trim(),
+                adjusterEmail: document.getElementById('intakeAdjusterEmail').value.trim()
+            };
+        }
+
         uploadForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn'); 
@@ -1669,18 +1742,6 @@
                 btn.disabled = false; return;
             }
 
-            if (!hasSignature) {
-                alert("Please sign in the signature box to authorize the appraisal before submitting.");
-                btn.disabled = false; return;
-            }
-
-            const typedSigName = document.getElementById('signatureTypedName').value.trim();
-            if (!typedSigName) {
-                alert("Please type your full legal name to confirm your signature.");
-                btn.disabled = false; return;
-            }
-
-            const signatureBase64 = signaturePad.toDataURL('image/png');
             const vehicleVinValue = document.getElementById('vehicleVin').value.trim();
 
             let totalCombinedBytes = 0;
@@ -1735,16 +1796,13 @@
                     const response = await fetch(webAppUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'text/plain' },
-                        body: JSON.stringify({
+                        body: JSON.stringify(Object.assign({
                             action: "init_submission",
                             shopIdentifier: globalPhoneIdentity, 
                             claimNumber: document.getElementById('claimNumber').value, 
-                            vehicleVin: vehicleVinValue,
                             notes: document.getElementById('notes').value,
-                            signatureBase64: signatureBase64,
-                            signatureTypedName: typedSigName,
                             files: bundledEncodedFiles 
-                        })
+                        }, buildIntakePayload()))
                     });
 
                     stopSmoothTicker();
@@ -1756,15 +1814,12 @@
                     const handshakeResponse = await fetch(webAppUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'text/plain' },
-                        body: JSON.stringify({
+                        body: JSON.stringify(Object.assign({
                             action: "init_submission",
                             shopIdentifier: globalPhoneIdentity, 
                             claimNumber: document.getElementById('claimNumber').value, 
-                            vehicleVin: vehicleVinValue,
-                            notes: document.getElementById('notes').value,
-                            signatureBase64: signatureBase64,
-                            signatureTypedName: typedSigName
-                        })
+                            notes: document.getElementById('notes').value
+                        }, buildIntakePayload()))
                     });
                     
                     const handshakeData = await handshakeResponse.json();
@@ -1822,7 +1877,6 @@
                 successModal.classList.remove('hidden');
                 
                 uploadForm.reset(); 
-                clearSignatureBtn.click();
                 document.querySelectorAll('.presubmit-check').forEach(cb => cb.checked = false);
                 selectedFiles = []; 
                 filePreviewContainer.innerHTML = ''; 
