@@ -1,25 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18382374583"></script>
+
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
+
   gtag('config', 'AW-18382374583');
+
+  // Google Ads: Portal Visit — Track only once per browser
+  if (!localStorage.getItem('ec_portal_visit_tracked')) {
+    gtag('event', 'conversion', {
+      'send_to': 'AW-18382374583/_CYWCJn_k-kcELeNs71E'
+    });
+
+    localStorage.setItem('ec_portal_visit_tracked', 'true');
+  }
 </script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vehicle Appraisal Client Portal</title>
-    
-    <!-- PWA & Mobile Engine Configurations -->
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#ffffff">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="EC Appraisals">
-    <link rel="apple-touch-icon" href="logo.png">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Vehicle Appraisal Client Portal</title>
+
+<!-- PWA & Mobile Engine Configurations -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EC Appraisals">
+<link rel="apple-touch-icon" href="logo.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
