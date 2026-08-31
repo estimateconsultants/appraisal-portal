@@ -1,39 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18382374583"></script>
-
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'AW-18382374583');
-
-  // Google Ads: Portal Visit — Track only once per browser
-  if (!localStorage.getItem('ec_portal_visit_tracked')) {
-    gtag('event', 'conversion', {
-      'send_to': 'AW-18382374583/_CYWCJn_k-kcELeNs71E'
-    });
-
-    localStorage.setItem('ec_portal_visit_tracked', 'true');
-  }
-</script>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Vehicle Appraisal Client Portal</title>
-
-<!-- PWA & Mobile Engine Configurations -->
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#ffffff">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="EC Appraisals">
-<link rel="apple-touch-icon" href="logo.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Appraisal Client Portal</title>
+    
+    <!-- PWA & Mobile Engine Configurations -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EC Appraisals">
+    <link rel="apple-touch-icon" href="logo.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -214,104 +192,139 @@
                     <p id="regHeaderTitle" class="text-[11px] font-bold text-brand-blue uppercase tracking-wider">Complete Account Registration</p>
                 </div>
 
-                <div class="space-y-3 max-h-[280px] overflow-y-auto pr-1">
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Full Name</label>
-                        <input type="text" id="newShopName" placeholder="e.g., Jane Smith" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-brand-blue">
+                <!-- 📊 PROGRESS TRACKER — hidden on step 1 so it doesn't feel like a chore before they've even started -->
+                <div id="regProgressTracker" class="hidden space-y-1.5 px-1">
+                    <div class="flex items-center justify-between">
+                        <span id="regProgressLabel" class="text-[10px] font-bold text-brand-blue uppercase tracking-wide">Step 2 of 4</span>
+                        <span id="regProgressPercent" class="text-[10px] font-bold text-slate-400">50%</span>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Vehicle</label>
-                        <input type="hidden" id="newShopContact">
-                        <div class="grid grid-cols-3 gap-2">
-                            <select id="regVehicleYear" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue cursor-pointer">
-                                <option value="">Year</option>
-                            </select>
-                            <select id="regVehicleMake" class="col-span-2 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue cursor-pointer">
-                                <option value="">Make</option>
-                                <option value="Acura">Acura</option><option value="Alfa Romeo">Alfa Romeo</option><option value="Audi">Audi</option><option value="BMW">BMW</option><option value="Buick">Buick</option><option value="Cadillac">Cadillac</option><option value="Chevrolet">Chevrolet</option><option value="Chrysler">Chrysler</option><option value="Dodge">Dodge</option><option value="FIAT">FIAT</option><option value="Ford">Ford</option><option value="Genesis">Genesis</option><option value="GMC">GMC</option><option value="Honda">Honda</option><option value="Hyundai">Hyundai</option><option value="Infiniti">Infiniti</option><option value="Jaguar">Jaguar</option><option value="Jeep">Jeep</option><option value="Kia">Kia</option><option value="Land Rover">Land Rover</option><option value="Lexus">Lexus</option><option value="Lincoln">Lincoln</option><option value="Maserati">Maserati</option><option value="Mazda">Mazda</option><option value="Mercedes-Benz">Mercedes-Benz</option><option value="MINI">MINI</option><option value="Mitsubishi">Mitsubishi</option><option value="Nissan">Nissan</option><option value="Porsche">Porsche</option><option value="RAM">RAM</option><option value="Subaru">Subaru</option><option value="Tesla">Tesla</option><option value="Toyota">Toyota</option><option value="Volkswagen">Volkswagen</option><option value="Volvo">Volvo</option><option value="OTHER">Other Make...</option>
-                            </select>
-                        </div>
-                        <select id="regVehicleModel" disabled class="w-full mt-2 p-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue disabled:opacity-60 cursor-pointer">
-                            <option value="">-- Select Make First --</option>
-                        </select>
-                        <div id="regOtherMakeContainer" class="hidden mt-2">
-                            <input type="text" id="regCustomMake" placeholder="e.g. Rivian, Lucid, Polestar" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
-                        </div>
-                        <p id="regClassicWarning" class="hidden mt-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800"><i class="fa-solid fa-triangle-exclamation mr-1"></i> We work 100% virtually and can't accept exotic, vintage, classic, or collector cars.</p>
-                        <input type="number" id="regVehicleMileage" placeholder="Current mileage, e.g. 45000" class="w-full mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
-                        <p id="regEligibilitySnapshot" class="hidden mt-2 p-2.5 rounded-lg text-[11px] leading-relaxed"></p>
-                        <textarea id="regVehicleNotes" rows="2" placeholder="Anything else about the vehicle: trim level, aftermarket upgrades/modifications, condition notes, etc." class="w-full mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs leading-relaxed focus:outline-none focus:border-brand-blue resize-none"></textarea>
+                    <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                        <div id="regProgressBar" class="bg-brand-blue h-full rounded-full transition-all duration-300 ease-out" style="width: 50%;"></div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Vehicle State (2-Letter Code)</label>
-                        <input type="text" id="newShopState" placeholder="e.g., TX" maxlength="2" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center uppercase font-bold focus:outline-none focus:border-brand-blue">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Appraisal Type</label>
-                        <select id="newShopClaims" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-brand-blue cursor-pointer">
-                            <option value="" disabled selected class="text-slate-500">Select appraisal type...</option>
-                            <option value="Diminished Value" class="bg-white">Diminished Value Appraisal ($199 + $299)</option>
-                            <option value="Total Loss" class="bg-white">Total Loss Appraisal ($299)</option>
-                            <option value="Estate/Probate" class="bg-white">Estate & Probate Appraisal ($299)</option>
-                            <option value="Bank & Collateral" class="bg-white">Bank & Collateral Appraisal ($299)</option>
-                            <option value="IRS Donation" class="bg-white">IRS Vehicle Donation Appraisal ($299)</option>
-                            <option value="Divorce/Legal Settlement" class="bg-white">Divorce / Legal Settlement ($299)</option>
-                        </select>
-                        <p id="pricingNote" class="text-[10px] text-slate-500 mt-1.5 leading-relaxed"></p>
-                        <div id="dvMoneyBackBadge" class="hidden mt-2.5 bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-xl p-3 text-center space-y-1">
-                            <span class="inline-block text-[9px] font-black bg-amber-100/90 text-brand-gold border border-amber-200 px-2.5 py-0.5 rounded-full uppercase tracking-widest">🛡️ Money-Back Guarantee</span>
-                            <p class="text-[11px] text-slate-700 leading-snug">
-                                <strong>$199 down</strong> to start, with the remaining <strong>$299 due only after</strong> the insurance company delivers an offer. If our full fee ($498) isn't covered by that offer, you get your money back.
-                            </p>
+                </div>
+
+                <div class="space-y-3 max-h-[320px] overflow-y-auto pr-1">
+
+                    <!-- STEP 1 — Full Name -->
+                    <div id="regStep1" class="reg-step space-y-3">
+                        <p class="text-sm font-bold text-slate-800">Let's start with your name.</p>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Full Name</label>
+                            <input type="text" id="newShopName" placeholder="e.g., Jane Smith" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-brand-blue">
                         </div>
                     </div>
 
-                    <!-- ⚠️ DIMINISHED VALUE ELIGIBILITY GATE — required for DV claims only -->
-                    <div id="dvEligibilityGate" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-3.5 space-y-2.5">
-                        <p class="text-[11px] font-bold text-brand-gold uppercase tracking-wide"><i class="fa-solid fa-circle-exclamation mr-1"></i> Diminished Value Eligibility</p>
-                        <p class="text-[11px] text-slate-600 leading-relaxed">Your vehicle's age, mileage, and make are checked automatically above. Please also confirm:</p>
-                        <label class="flex items-start gap-2 cursor-pointer select-none">
-                            <input type="checkbox" class="dv-elig-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
-                            <span class="text-[11px] text-slate-700 leading-snug">I was <strong>not at fault</strong> for the collision, and this claim will be filed against the <strong>at-fault driver's (3rd-party) insurance</strong>.</span>
-                        </label>
-                        <label class="flex items-start gap-2 cursor-pointer select-none">
-                            <input type="checkbox" class="dv-elig-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
-                            <span class="text-[11px] text-slate-700 leading-snug">My vehicle has <strong>no accident history</strong>.</span>
-                        </label>
-                        <label class="flex items-start gap-2 cursor-pointer select-none">
-                            <input type="checkbox" class="dv-elig-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
-                            <span class="text-[11px] text-slate-700 leading-snug">My vehicle is registered in a state <strong>other than Nebraska (NE) or Michigan (MI)</strong>.</span>
-                        </label>
-                        <p id="dvEligibilityWarning" class="hidden text-[11px] font-bold text-red-600 pt-1"><i class="fa-solid fa-ban mr-1"></i> You must confirm all three items above to submit a Diminished Value claim.</p>
+                    <!-- STEP 2 — Vehicle -->
+                    <div id="regStep3" class="reg-step hidden space-y-3">
+                        <p class="text-sm font-bold text-slate-800">Tell us about your vehicle.</p>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Vehicle</label>
+                            <input type="hidden" id="newShopContact">
+                            <div class="grid grid-cols-3 gap-2">
+                                <select id="regVehicleYear" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue cursor-pointer">
+                                    <option value="">Year</option>
+                                </select>
+                                <select id="regVehicleMake" class="col-span-2 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue cursor-pointer">
+                                    <option value="">Make</option>
+                                    <option value="Acura">Acura</option><option value="Alfa Romeo">Alfa Romeo</option><option value="Audi">Audi</option><option value="BMW">BMW</option><option value="Buick">Buick</option><option value="Cadillac">Cadillac</option><option value="Chevrolet">Chevrolet</option><option value="Chrysler">Chrysler</option><option value="Dodge">Dodge</option><option value="FIAT">FIAT</option><option value="Ford">Ford</option><option value="Genesis">Genesis</option><option value="GMC">GMC</option><option value="Honda">Honda</option><option value="Hyundai">Hyundai</option><option value="Infiniti">Infiniti</option><option value="Jaguar">Jaguar</option><option value="Jeep">Jeep</option><option value="Kia">Kia</option><option value="Land Rover">Land Rover</option><option value="Lexus">Lexus</option><option value="Lincoln">Lincoln</option><option value="Maserati">Maserati</option><option value="Mazda">Mazda</option><option value="Mercedes-Benz">Mercedes-Benz</option><option value="MINI">MINI</option><option value="Mitsubishi">Mitsubishi</option><option value="Nissan">Nissan</option><option value="Porsche">Porsche</option><option value="RAM">RAM</option><option value="Subaru">Subaru</option><option value="Tesla">Tesla</option><option value="Toyota">Toyota</option><option value="Volkswagen">Volkswagen</option><option value="Volvo">Volvo</option><option value="OTHER">Other Make...</option>
+                                </select>
+                            </div>
+                            <select id="regVehicleModel" disabled class="w-full mt-2 p-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue disabled:opacity-60 cursor-pointer">
+                                <option value="">-- Select Make First --</option>
+                            </select>
+                            <div id="regOtherMakeContainer" class="hidden mt-2">
+                                <input type="text" id="regCustomMake" placeholder="e.g. Rivian, Lucid, Polestar" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
+                            </div>
+                            <p id="regClassicWarning" class="hidden mt-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800"><i class="fa-solid fa-triangle-exclamation mr-1"></i> We work 100% virtually and can't accept exotic, vintage, classic, or collector cars.</p>
+                            <input type="number" id="regVehicleMileage" placeholder="Current mileage, e.g. 45000" class="w-full mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
+                            <p id="regEligibilitySnapshot" class="hidden mt-2 p-2.5 rounded-lg text-[11px] leading-relaxed"></p>
+                            <textarea id="regVehicleNotes" rows="2" placeholder="Anything else about the vehicle: trim level, aftermarket upgrades/modifications, condition notes, etc." class="w-full mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs leading-relaxed focus:outline-none focus:border-brand-blue resize-none"></textarea>
+                        </div>
                     </div>
-                    <div>
+
+                    <!-- STEP 3 — State, Appraisal Type, DV eligibility -->
+                    <div id="regStep2" class="reg-step hidden space-y-3">
+                        <p class="text-sm font-bold text-slate-800">What kind of appraisal do you need?</p>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Vehicle State (2-Letter Code)</label>
+                            <input type="text" id="newShopState" placeholder="e.g., TX" maxlength="2" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center uppercase font-bold focus:outline-none focus:border-brand-blue">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Appraisal Type</label>
+                            <select id="newShopClaims" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-brand-blue cursor-pointer">
+                                <option value="" disabled selected class="text-slate-500">Select appraisal type...</option>
+                                <option value="Diminished Value" class="bg-white">Diminished Value Appraisal ($199 + $299)</option>
+                                <option value="Total Loss" class="bg-white">Total Loss Appraisal ($299)</option>
+                                <option value="Estate/Probate" class="bg-white">Estate & Probate Appraisal ($299)</option>
+                                <option value="Bank & Collateral" class="bg-white">Bank & Collateral Appraisal ($299)</option>
+                                <option value="IRS Donation" class="bg-white">IRS Vehicle Donation Appraisal ($299)</option>
+                                <option value="Divorce/Legal Settlement" class="bg-white">Divorce / Legal Settlement ($299)</option>
+                            </select>
+                            <p id="pricingNote" class="text-[10px] text-slate-500 mt-1.5 leading-relaxed"></p>
+                            <div id="dvMoneyBackBadge" class="hidden mt-2.5 bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-xl p-3 text-center space-y-1">
+                                <span class="inline-block text-[9px] font-black bg-amber-100/90 text-brand-gold border border-amber-200 px-2.5 py-0.5 rounded-full uppercase tracking-widest">🛡️ Money-Back Guarantee</span>
+                                <p class="text-[11px] text-slate-700 leading-snug">
+                                    <strong>$199 down</strong> to start, with the remaining <strong>$299 due only after</strong> the insurance company delivers an offer. If our full fee ($498) isn't covered by that offer, you get your money back.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- ⚠️ DIMINISHED VALUE ELIGIBILITY GATE — required for DV claims only -->
+                        <div id="dvEligibilityGate" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-3.5 space-y-2.5">
+                            <p class="text-[11px] font-bold text-brand-gold uppercase tracking-wide"><i class="fa-solid fa-circle-exclamation mr-1"></i> Diminished Value Eligibility</p>
+                            <p class="text-[11px] text-slate-600 leading-relaxed">Your vehicle's age, mileage, and make are checked automatically above. Please also confirm:</p>
+                            <label class="flex items-start gap-2 cursor-pointer select-none">
+                                <input type="checkbox" class="dv-elig-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
+                                <span class="text-[11px] text-slate-700 leading-snug">I was <strong>not at fault</strong> for the collision, and this claim will be filed against the <strong>at-fault driver's (3rd-party) insurance</strong>.</span>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer select-none">
+                                <input type="checkbox" class="dv-elig-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
+                                <span class="text-[11px] text-slate-700 leading-snug">My vehicle has <strong>no accident history</strong>.</span>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer select-none">
+                                <input type="checkbox" class="dv-elig-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
+                                <span class="text-[11px] text-slate-700 leading-snug">My vehicle is registered in a state <strong>other than Nebraska (NE) or Michigan (MI)</strong>.</span>
+                            </label>
+                            <p id="dvEligibilityWarning" class="hidden text-[11px] font-bold text-red-600 pt-1"><i class="fa-solid fa-ban mr-1"></i> You must confirm all three items above to submit a Diminished Value claim.</p>
+                        </div>
+                    </div>
+
+                    <!-- STEP 4 — PIN -->
+                    <div id="regStep4" class="reg-step hidden space-y-3">
+                        <p class="text-sm font-bold text-slate-800">Last step — secure your account.</p>
                         <input type="hidden" id="newShopEmail">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Create a Account PIN</label>
-                        <div class="relative w-full">
-                            <input type="password" id="newShopPassword" placeholder="••••" class="w-full p-3 pr-12 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center tracking-widest focus:outline-none focus:border-brand-blue">
-                            <button type="button" id="toggleRegPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-brand-blue select-none">Show</button>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Create an Account PIN</label>
+                            <div class="relative w-full">
+                                <input type="password" id="newShopPassword" placeholder="••••" class="w-full p-3 pr-12 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center tracking-widest focus:outline-none focus:border-brand-blue">
+                                <button type="button" id="toggleRegPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-brand-blue select-none">Show</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Confirm Account PIN</label>
+                            <div class="relative w-full">
+                                <input type="password" id="newShopPasswordConfirm" placeholder="••••" class="w-full p-3 pr-12 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center tracking-widest focus:outline-none focus:border-brand-blue">
+                                <button type="button" id="toggleRegPasswordConfirm" class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-brand-blue select-none">Show</button>
+                            </div>
+                        </div>
+
+                        <!-- 🔑 REMEMBER ME ON REGISTRATION -->
+                        <div class="flex items-center justify-between px-1 pt-1">
+                            <label class="flex items-center space-x-2 cursor-pointer select-none">
+                                <input type="checkbox" id="rememberMeReg" checked class="w-4 h-4 rounded bg-white border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
+                                <span class="text-xs text-slate-500 font-bold uppercase tracking-wide">Remember Me on this device</span>
+                            </label>
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Confirm Account PIN</label>
-                        <div class="relative w-full">
-                            <input type="password" id="newShopPasswordConfirm" placeholder="••••" class="w-full p-3 pr-12 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center tracking-widest focus:outline-none focus:border-brand-blue">
-                            <button type="button" id="toggleRegPasswordConfirm" class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-brand-blue select-none">Show</button>
-                        </div>
-                    </div>
+
                 </div>
 
-                <!-- 🔑 REMEMBER ME ON REGISTRATION -->
-                <div class="flex items-center justify-between px-1 pt-1">
-                    <label class="flex items-center space-x-2 cursor-pointer select-none">
-                        <input type="checkbox" id="rememberMeReg" checked class="w-4 h-4 rounded bg-white border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
-                        <span class="text-xs text-slate-500 font-bold uppercase tracking-wide">Remember Me on this device</span>
-                    </label>
+                <!-- STEP NAVIGATION -->
+                <div class="flex items-center gap-2">
+                    <button type="button" id="regBackBtn" class="hidden px-4 py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black uppercase tracking-wider text-xs rounded-xl">Back</button>
+                    <button type="button" id="regNextBtn" class="flex-1 w-full bg-brand-blue hover:bg-brand-blueHover active:scale-[0.98] text-white font-black uppercase tracking-wider p-4 rounded-xl shadow-md shadow-blue-500/20">Continue</button>
+                    <button type="button" id="registerBtn" class="hidden flex-1 w-full bg-brand-blue hover:bg-brand-blueHover active:scale-[0.98] text-white font-black uppercase tracking-wider p-4 rounded-xl shadow-md shadow-blue-500/20">Create Account & Access Portal</button>
                 </div>
-
-                <button type="button" id="registerBtn" class="w-full bg-brand-blue hover:bg-brand-blueHover active:scale-[0.98] text-white font-black uppercase tracking-wider p-4 rounded-xl shadow-md shadow-blue-500/20">Create Account & Access Portal</button>
                 
                 <div class="text-center pt-1">
                     <button type="button" id="backToPhoneBtn2" class="text-[10px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide">← Change Email Address</button>
@@ -1155,10 +1168,12 @@
                             if (data.claimsVolume) document.getElementById('newShopClaims').value = data.claimsVolume;
                             
                             newShopContainer.classList.remove('hidden');
+                            showRegStep(1);
                         }
                     } else {
                         regHeaderTitle.innerText = "New Customer Registration";
                         newShopContainer.classList.remove('hidden');
+                        showRegStep(1);
                     }
                 }).catch(err => { 
                     alert("Lookup timed out. Please try again."); 
@@ -1309,6 +1324,111 @@
             }
         });
 
+        // 📖 STEP-BY-STEP REGISTRATION WIZARD
+        const TOTAL_REG_STEPS = 4;
+        let currentRegStep = 1;
+        const regBackBtn = document.getElementById('regBackBtn');
+        const regNextBtn = document.getElementById('regNextBtn');
+        const regProgressTracker = document.getElementById('regProgressTracker');
+        const regProgressLabel = document.getElementById('regProgressLabel');
+        const regProgressPercent = document.getElementById('regProgressPercent');
+        const regProgressBar = document.getElementById('regProgressBar');
+
+        function showRegStep(n) {
+            for (let i = 1; i <= TOTAL_REG_STEPS; i++) {
+                document.getElementById('regStep' + i).classList.toggle('hidden', i !== n);
+            }
+            currentRegStep = n;
+            regBackBtn.classList.toggle('hidden', n === 1);
+            regNextBtn.classList.toggle('hidden', n === TOTAL_REG_STEPS);
+            registerBtn.classList.toggle('hidden', n !== TOTAL_REG_STEPS);
+
+            // Tracker stays hidden on step 1 — no reason to make someone feel
+            // like they're mid-form before they've even typed their name.
+            if (n === 1) {
+                regProgressTracker.classList.add('hidden');
+            } else {
+                regProgressTracker.classList.remove('hidden');
+                const pct = Math.round((n / TOTAL_REG_STEPS) * 100);
+                regProgressLabel.innerText = `Step ${n} of ${TOTAL_REG_STEPS}`;
+                regProgressPercent.innerText = pct + '%';
+                regProgressBar.style.width = pct + '%';
+            }
+        }
+
+        function validateRegStep(n) {
+            if (n === 1) {
+                if (!document.getElementById('newShopName').value.trim()) {
+                    alert("Please enter your full name.");
+                    return false;
+                }
+                return true;
+            }
+            if (n === 2) {
+                const stateVal = document.getElementById('newShopState').value.trim();
+                const claimsVal = document.getElementById('newShopClaims').value;
+                if (!stateVal || !claimsVal) {
+                    alert("Please select your state and appraisal type.");
+                    return false;
+                }
+                // 🚫 DIMINISHED VALUE — the self-attested checkboxes and state
+                // exclusion are checked here, BEFORE asking for vehicle details,
+                // so someone who doesn't qualify finds out before spending time
+                // looking up their VIN/mileage. Age/mileage/classic-car checks
+                // can't happen yet — that data doesn't exist until step 3 — so
+                // those are checked there instead, once the vehicle is entered.
+                if (claimsVal === "Diminished Value") {
+                    const checks = document.querySelectorAll('.dv-elig-check');
+                    const allChecked = Array.from(checks).every(cb => cb.checked);
+                    if (!allChecked) {
+                        dvEligibilityWarning.classList.remove('hidden');
+                        dvEligibilityGate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return false;
+                    }
+                    if (stateVal.toUpperCase() === "NE" || stateVal.toUpperCase() === "MI") {
+                        alert("Diminished Value claims are not offered in Nebraska (NE) or Michigan (MI). Please call 910-333-6001 to discuss other appraisal options for your vehicle.");
+                        return false;
+                    }
+                }
+                return true;
+            }
+            if (n === 3) {
+                if (!regVehicleYear.value || !regVehicleMake.value || !regVehicleModel.value) {
+                    alert("Please select your vehicle's year, make, and model.");
+                    return false;
+                }
+                if (!regVehicleMileage.value.trim()) {
+                    alert("Please enter your vehicle's current mileage.");
+                    regVehicleMileage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return false;
+                }
+                // Age/mileage/classic-car eligibility — only checkable now that
+                // the vehicle's actually been entered.
+                if (document.getElementById('newShopClaims').value === "Diminished Value") {
+                    const elig = getVehicleEligibility();
+                    if (elig.ageOk === false || elig.mileageOk === false) {
+                        alert("Diminished Value claims require a vehicle 10 years old or newer with under 100,000 miles. Based on what you entered, this vehicle doesn't meet that criteria — please call 910-333-6001 to discuss other options.");
+                        return false;
+                    }
+                    if (!elig.notClassic) {
+                        alert("We work 100% virtually and can't accept exotic, vintage, classic, or collector cars for Diminished Value claims. Please call 910-333-6001 to discuss other options.");
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return true;
+        }
+
+        regNextBtn.addEventListener('click', () => {
+            if (!validateRegStep(currentRegStep)) return;
+            showRegStep(currentRegStep + 1);
+        });
+
+        regBackBtn.addEventListener('click', () => {
+            showRegStep(currentRegStep - 1);
+        });
+
         registerBtn.addEventListener('click', () => {
             const newName = document.getElementById('newShopName').value.trim();
             const newContact = syncVehicleFieldFromSelectors();
@@ -1319,40 +1439,13 @@
             const newPass = document.getElementById('newShopPassword').value.trim();
             const newPassConfirm = document.getElementById('newShopPasswordConfirm').value.trim();
             
-            if (!newName || !regVehicleYear.value || !regVehicleMake.value || !regVehicleModel.value || !newState || !newClaims || !newEmail || !newPass || !newPassConfirm) { 
-                alert("Please complete all registration fields, including your vehicle's year, make, and model."); return; 
+            // Name/vehicle/state/type/DV-eligibility were already validated when
+            // advancing through steps 1-3 — only the PIN needs checking here.
+            if (!newPass || !newPassConfirm) {
+                alert("Please create and confirm your Account PIN.");
+                return;
             }
             if (newPass !== newPassConfirm) { alert("Passwords do not match."); return; }
-
-            // 🚫 DIMINISHED VALUE HARD GATE — 3 self-attested checkboxes, plus auto-derived
-            // age/mileage/classic checks computed from the vehicle fields (no checkbox needed for those).
-            if (newClaims === "Diminished Value") {
-                const checks = document.querySelectorAll('.dv-elig-check');
-                const allChecked = Array.from(checks).every(cb => cb.checked);
-                if (!allChecked) {
-                    dvEligibilityWarning.classList.remove('hidden');
-                    dvEligibilityGate.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    return;
-                }
-                if (newState.toUpperCase() === "NE" || newState.toUpperCase() === "MI") {
-                    alert("Diminished Value claims are not offered in Nebraska (NE) or Michigan (MI). Please call 910-333-6001 to discuss other appraisal options for your vehicle.");
-                    return;
-                }
-                const elig = getVehicleEligibility();
-                if (elig.mileage === null) {
-                    alert("Please enter your vehicle's current mileage.");
-                    regVehicleMileage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    return;
-                }
-                if (elig.ageOk === false || elig.mileageOk === false) {
-                    alert("Diminished Value claims require a vehicle 10 years old or newer with under 100,000 miles. Based on what you entered, this vehicle doesn't meet that criteria — please call 910-333-6001 to discuss other options.");
-                    return;
-                }
-                if (!elig.notClassic) {
-                    alert("We work 100% virtually and can't accept exotic, vintage, classic, or collector cars for Diminished Value claims. Please call 910-333-6001 to discuss other options.");
-                    return;
-                }
-            }
             
             registerBtn.innerText = "Creating Account & Logging In..."; registerBtn.disabled = true;
 
