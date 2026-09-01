@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vehicle Appraisal Client Portal</title>
+
+    <!-- Google tag (gtag.js) — same account as the marketing site. linker.domains
+         is what lets the click ID that arrived from estimateconsultants.com carry
+         through to here, so a conversion fired on this page still attributes back
+         to the original ad click. -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18382374583"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'AW-18382374583', {
+        'linker': {
+          'domains': ['estimateconsultants.com', 'appraisals.estimateconsultants.com']
+        }
+      });
+      const GADS_CLAIM_SUBMITTED_LABEL = 'AW-18382374583/UjIeCPrmzuscELeNs71E';
+    </script>
     
     <!-- PWA & Mobile Engine Configurations -->
     <link rel="manifest" href="/manifest.json">
@@ -2114,6 +2131,19 @@
 
                 updateProgressUI(100);
                 successModal.classList.remove('hidden');
+
+                // 📈 GOOGLE ADS CONVERSION — fires once, right when a claim
+                // submission actually succeeds. Value matches actual pricing:
+                // $498 total for Diminished Value (the $199+$299 combined), $299
+                // flat for every other appraisal type.
+                if (typeof gtag === 'function') {
+                    gtag('event', 'conversion', {
+                        'send_to': GADS_CLAIM_SUBMITTED_LABEL,
+                        'value': globalAppraisalType === "Diminished Value" ? 498.00 : 299.00,
+                        'currency': 'USD',
+                        'transaction_id': 'claim-' + Date.now()
+                    });
+                }
                 
                 uploadForm.reset(); 
                 document.querySelectorAll('.presubmit-check').forEach(cb => cb.checked = false);
