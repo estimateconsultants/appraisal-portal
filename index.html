@@ -890,7 +890,7 @@
         // Global State Variables
         let globalShopName = "", globalPhoneIdentity = "", isNewShop = false;
         let globalAppraisalType = "";
-        let globalVehicleInfo = "", globalStateInfo = "";
+        let globalVehicleInfo = "", globalStateInfo = "", globalEstimatorVin = "";
         const submitBtn = document.getElementById('submitBtn');
         let selectedFiles = [];
         let activeAuthMode = "password"; 
@@ -973,6 +973,38 @@
             }
             regVehicleModel.disabled = false;
         });
+
+        // Pre-fills the registration form from a prior DV estimator run,
+        // matched by email — so someone who already told us their vehicle
+        // on the marketing site doesn't have to type it all in again here.
+        // Drives the Year → Make → Model cascade properly (setting Make
+        // alone doesn't populate Model's options, so we dispatch the same
+        // 'change' event the dropdown itself fires on a manual selection).
+        function prefillFromEstimatorLead(lead) {
+            if (lead.name) document.getElementById('newShopName').value = lead.name;
+            if (lead.state) document.getElementById('newShopState').value = lead.state.toUpperCase();
+            if (lead.mileage) document.getElementById('regVehicleMileage').value = lead.mileage;
+            if (lead.vin) globalEstimatorVin = lead.vin; // used later to pre-fill + auto-decode on the upload form's VIN field
+
+            if (lead.vehicle) {
+                const parts = lead.vehicle.trim().split(/\s+/);
+                const year = parts[0] || '';
+                const make = parts[1] || '';
+                const model = parts.slice(2).join(' ');
+
+                if (year && Array.from(regVehicleYear.options).some(o => o.value === year)) {
+                    regVehicleYear.value = year;
+                }
+                if (make && Array.from(regVehicleMake.options).some(o => o.value === make)) {
+                    regVehicleMake.value = make;
+                    regVehicleMake.dispatchEvent(new Event('change'));
+                    if (model && Array.from(regVehicleModel.options).some(o => o.value === model)) {
+                        regVehicleModel.value = model;
+                    }
+                }
+            }
+            updateEligibilitySnapshot();
+        }
 
         function syncVehicleFieldFromSelectors() {
             const year = regVehicleYear.value;
@@ -1225,6 +1257,7 @@
                         regHeaderTitle.innerText = "New Customer Registration";
                         newShopContainer.classList.remove('hidden');
                         showRegStep(1);
+                        if (data.estimatorLead) prefillFromEstimatorLead(data.estimatorLead);
                     }
                 }).catch(err => { 
                     alert("Lookup timed out. Please try again."); 
@@ -1606,6 +1639,15 @@
             if (globalStateInfo && !stateField.value) {
                 stateField.value = globalStateInfo.toUpperCase();
             }
+
+            // VIN from the DV estimator, if they gave one — pre-fill and run
+            // the decode automatically, since a decoded VIN is more reliable
+            // than the estimator's typed-in Year/Make/Model and should win.
+            const vinField = document.getElementById('vehicleVin');
+            if (globalEstimatorVin && !vinField.value) {
+                vinField.value = globalEstimatorVin;
+                runVinDecode(globalEstimatorVin);
+            }
         }
 
         function completeAuthentication(claims) {
@@ -1913,10 +1955,11 @@
 
         // VIN DECODE — free NHTSA vPIC API, no key needed. Auto-fills
         // Year/Make/Model/Trim from the VIN so it only needs typing once.
-        document.getElementById('decodeVinBtn').addEventListener('click', async () => {
-            const vin = document.getElementById('vehicleVin').value.trim().toUpperCase();
+        // Pulled out as its own function so it can run automatically when a
+        // VIN carries over from the DV estimator, not just on button click.
+        async function runVinDecode(vin) {
             const statusEl = document.getElementById('vinDecodeStatus');
-            if (vin.length !== 17) {
+            if (!vin || vin.length !== 17) {
                 statusEl.className = "text-[10px] text-red-500 mt-1";
                 statusEl.innerText = "VIN must be exactly 17 characters.";
                 return;
@@ -1950,6 +1993,11 @@
                 statusEl.className = "text-[10px] text-red-500 mt-1";
                 statusEl.innerText = "Couldn't decode that VIN — please fill in the fields below manually.";
             }
+        }
+
+        document.getElementById('decodeVinBtn').addEventListener('click', () => {
+            const vin = document.getElementById('vehicleVin').value.trim().toUpperCase();
+            runVinDecode(vin);
         });
 
         function buildIntakePayload() {
