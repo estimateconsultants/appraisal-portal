@@ -267,7 +267,7 @@
                             <select id="newShopClaims" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-brand-blue cursor-pointer">
                                 <option value="" disabled selected class="text-slate-500">Select appraisal type...</option>
                                 <option value="Diminished Value" class="bg-white">Diminished Value Appraisal ($199 + $299)</option>
-                                <option value="Total Loss" class="bg-white">Total Loss Appraisal Clause ($429.99)</option>
+                                <option value="Total Loss" class="bg-white">Total Loss Appraisal ($299)</option>
                                 <option value="Estate/Probate" class="bg-white">Estate & Probate Appraisal ($299)</option>
                                 <option value="Bank & Collateral" class="bg-white">Bank & Collateral Appraisal ($299)</option>
                                 <option value="IRS Donation" class="bg-white">IRS Vehicle Donation Appraisal ($299)</option>
@@ -827,16 +827,6 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         let urlShopIdentifier = urlParams.get('s') || '';
-
-        // Handoff data from the Total Loss estimator on the marketing site,
-        // if this visitor came from there — pre-fills registration so it
-        // feels like one continuous flow instead of starting over.
-        const urlHandoffType = urlParams.get('type') || '';
-        const urlTlVehicle = urlParams.get('tlVehicle') || '';
-        const urlTlState = urlParams.get('tlState') || '';
-        const urlTlMileage = urlParams.get('tlMileage') || '';
-        const urlTlNotes = urlParams.get('tlNotes') || '';
-        const urlTlVin = urlParams.get('tlVin') || '';
         
         // DOM Elements
         const verificationScreen = document.getElementById('verificationScreen');
@@ -1003,43 +993,6 @@
 
             if (lead.vehicle) {
                 const parts = lead.vehicle.trim().split(/\s+/);
-                const year = parts[0] || '';
-                const make = parts[1] || '';
-                const model = parts.slice(2).join(' ');
-
-                if (year && Array.from(regVehicleYear.options).some(o => o.value === year)) {
-                    regVehicleYear.value = year;
-                }
-                if (make && Array.from(regVehicleMake.options).some(o => o.value === make)) {
-                    regVehicleMake.value = make;
-                    regVehicleMake.dispatchEvent(new Event('change'));
-                    if (model && Array.from(regVehicleModel.options).some(o => o.value === model)) {
-                        regVehicleModel.value = model;
-                    }
-                }
-            }
-            updateEligibilitySnapshot();
-        }
-
-        // Pre-fills registration from the Total Loss estimator handoff link —
-        // same cascade-driving approach as prefillFromEstimatorLead above, plus
-        // pre-selecting the appraisal type and carrying over the insurance-offer
-        // and condition notes so the customer doesn't have to retype them.
-        function prefillFromTotalLossHandoff() {
-            if (urlHandoffType) {
-                const claimsSelect = document.getElementById('newShopClaims');
-                if (Array.from(claimsSelect.options).some(o => o.value === urlHandoffType)) {
-                    claimsSelect.value = urlHandoffType;
-                    claimsSelect.dispatchEvent(new Event('change'));
-                }
-            }
-            if (urlTlState) document.getElementById('newShopState').value = urlTlState.toUpperCase();
-            if (urlTlMileage) document.getElementById('regVehicleMileage').value = urlTlMileage;
-            if (urlTlNotes) document.getElementById('regVehicleNotes').value = urlTlNotes;
-            if (urlTlVin) globalEstimatorVin = urlTlVin; // used later to pre-fill + auto-decode on the upload form's VIN field
-
-            if (urlTlVehicle) {
-                const parts = urlTlVehicle.trim().split(/\s+/);
                 const year = parts[0] || '';
                 const make = parts[1] || '';
                 const model = parts.slice(2).join(' ');
@@ -1310,7 +1263,6 @@
                         newShopContainer.classList.remove('hidden');
                         showRegStep(1);
                         if (data.estimatorLead) prefillFromEstimatorLead(data.estimatorLead);
-                        if (urlTlVehicle) prefillFromTotalLossHandoff();
                     }
                 }).catch(err => { 
                     alert("Lookup timed out. Please try again."); 
@@ -1439,7 +1391,7 @@
         // PRICING NOTE + DV ELIGIBILITY GATE TOGGLE
         const APPRAISAL_PRICING_NOTES = {
             "Diminished Value": "$199 to begin your appraisal. The remaining $299 is due only after the insurance company responds with an offer.",
-            "Total Loss": "$429.99 flat fee — Appraisal Clause appraisal for your own (1st-party) total loss dispute.",
+            "Total Loss": "$299 flat fee — independent evaluation of your vehicle's fair market value.",
             "Estate/Probate": "$299 flat fee — official valuation report for probate courts, estate distribution, or tax settlements.",
             "Bank & Collateral": "$299 flat fee — certified appraisal documentation for lenders and financial institutions.",
             "IRS Donation": "$299 flat fee — IRS tax-compliant written appraisal for vehicle donations exceeding federal thresholds.",
@@ -2261,12 +2213,25 @@
                 }
 
                 updateProgressUI(100);
-                successModal.classList.remove('hidden');
 
                 // 📈 GOOGLE ADS CONVERSION — fires once, right when a claim
                 // submission actually succeeds. Value matches actual pricing:
-                // $498 total for Diminished Value (the $199+$299 combined), $299
-                // flat for every other appraisal type.
+                // $498 total for Diminished Value, $429.99 for Total Loss
+                // Appraisal Clause, $299 flat for every other appraisal type.
+                //
+                // Total Loss redirects to its own dedicated thank-you page
+                // instead — that page fires the conversion itself on load,
+                // so it's skipped here to avoid double-counting, and it also
+                // gives Total Loss its own separate, page-based conversion
+                // action in Google Ads if wanted, distinct from this shared
+                // event-based one.
+                if (globalAppraisalType === "Total Loss") {
+                    window.location.href = "total-loss-thank-you.html";
+                    return;
+                }
+
+                successModal.classList.remove('hidden');
+
                 if (typeof gtag === 'function') {
                     gtag('event', 'conversion', {
                         'send_to': GADS_CLAIM_SUBMITTED_LABEL,
