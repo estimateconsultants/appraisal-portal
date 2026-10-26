@@ -248,7 +248,7 @@
                             <div id="regOtherMakeContainer" class="hidden mt-2">
                                 <input type="text" id="regCustomMake" placeholder="e.g. Rivian, Lucid, Polestar" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
                             </div>
-                            <p id="regClassicWarning" class="hidden mt-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800"><i class="fa-solid fa-triangle-exclamation mr-1"></i> We work 100% virtually and can't accept exotic, vintage, classic, or collector cars.</p>
+                            <p id="regClassicWarning" class="hidden mt-2 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800"><i class="fa-solid fa-circle-check mr-1"></i> Classic, collector, exotic and motorcycle owners are welcome. Choose Other and enter the make and model.</p>
                             <input type="number" id="regVehicleMileage" placeholder="Current mileage, e.g. 45000" class="w-full mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
                             <p id="regEligibilitySnapshot" class="hidden mt-2 p-2.5 rounded-lg text-[11px] leading-relaxed"></p>
                             <textarea id="regVehicleNotes" rows="2" placeholder="Anything else about the vehicle: trim level, aftermarket upgrades/modifications, condition notes, etc." class="w-full mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs leading-relaxed focus:outline-none focus:border-brand-blue resize-none"></textarea>
@@ -1033,7 +1033,7 @@
             const age = year ? (currentYear - year) : null;
             const ageOk = age === null ? null : age <= 10;
             const mileageOk = isNaN(mileage) ? null : mileage < 100000;
-            const notClassic = make !== 'OTHER';
+            const notClassic = true; // classic, collector, exotic and motorcycles are accepted
 
             return { age, ageOk, mileage: isNaN(mileage) ? null : mileage, mileageOk, notClassic, make };
         }
