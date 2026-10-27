@@ -208,8 +208,8 @@
                 <!-- PROGRESS TRACKER — hidden on step 1 so it doesn't feel like a chore before they've even started -->
                 <div id="regProgressTracker" class="hidden space-y-1.5 px-1">
                     <div class="flex items-center justify-between">
-                        <span id="regProgressLabel" class="text-[10px] font-bold text-brand-blue uppercase tracking-wide">Step 2 of 4</span>
-                        <span id="regProgressPercent" class="text-[10px] font-bold text-slate-400">50%</span>
+                        <span id="regProgressLabel" class="text-[10px] font-bold text-brand-blue uppercase tracking-wide">Step 1 of 4</span>
+                        <span id="regProgressPercent" class="text-[10px] font-bold text-slate-400">25%</span>
                     </div>
                     <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                         <div id="regProgressBar" class="bg-brand-blue h-full rounded-full transition-all duration-300 ease-out" style="width: 50%;"></div>
@@ -267,13 +267,17 @@
                             <select id="newShopClaims" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-brand-blue cursor-pointer">
                                 <option value="" disabled selected class="text-slate-500">Select appraisal type...</option>
                                 <option value="Diminished Value" class="bg-white">Diminished Value Appraisal ($199 + $299)</option>
-                                <option value="Total Loss" class="bg-white">Total Loss Appraisal ($299)</option>
+                                <option value="Total Loss" class="bg-white">Total Loss - Appraisal Clause ($299)</option>
                                 <option value="Estate/Probate" class="bg-white">Estate & Probate Appraisal ($299)</option>
                                 <option value="Bank & Collateral" class="bg-white">Bank & Collateral Appraisal ($299)</option>
                                 <option value="IRS Donation" class="bg-white">IRS Vehicle Donation Appraisal ($299)</option>
                                 <option value="Divorce/Legal Settlement" class="bg-white">Divorce / Legal Settlement ($299)</option>
                             </select>
                             <p id="pricingNote" class="text-[10px] text-slate-500 mt-1.5 leading-relaxed"></p>
+                            <div id="tlCheckPromo" class="hidden mt-2.5 bg-white border border-slate-200 rounded-xl p-3.5 text-left space-y-2">
+                                <p class="text-[11px] text-slate-700 leading-snug"><strong class="text-slate-900">Not sure the offer is worth disputing?</strong> See where it stands before you start. It&rsquo;s free, takes about two minutes, and shows an estimated range for what your car may be worth.</p>
+                                <a href="https://estimateconsultants.com/total-loss-appraisal.html#offer-check" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 w-full py-2.5 text-[11px] font-bold uppercase tracking-wider text-brand-blue bg-white hover:bg-slate-50 border border-brand-blue rounded-lg transition"><i class="fa-solid fa-scale-balanced"></i> Check My Offer, Free</a>
+                            </div>
                             <div id="dvMoneyBackBadge" class="hidden mt-2.5 bg-white border border-slate-200 rounded-xl p-3.5 text-left space-y-1.5">
                                 <p class="text-[10px] font-bold text-brand-blue uppercase tracking-widest"><i class="fa-solid fa-shield-halved mr-1"></i> Money-Back Guarantee</p>
                                 <p class="text-[11px] text-slate-600 leading-snug">
@@ -469,12 +473,17 @@
                     <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Insurance Carrier</label>
                     <input type="text" id="intakeCarrier" placeholder="e.g., State Farm" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
                 </div>
+                <div id="tlOfferWrap" class="hidden">
+                    <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Insurance Company's Total Loss Offer <span class="normal-case font-medium text-slate-400">($, if you have it)</span></label>
+                    <input type="text" id="intakeOfferAmount" inputmode="numeric" placeholder="e.g., 24,500" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
+                    <p class="text-[10px] text-slate-500 mt-1 pl-1">The appraisal clause comes from your own policy, so use the claim with your own insurance company if you can.</p>
+                </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Date of Loss</label>
                         <input type="date" id="intakeDateOfLoss" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
                     </div>
-                    <div>
+                    <div id="dateRepairedWrap">
                         <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1 pl-1">Date Repaired</label>
                         <input type="date" id="intakeDateRepaired" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-brand-blue">
                     </div>
@@ -517,7 +526,7 @@
                 <div>
                     <div class="flex items-center justify-between mb-1 pl-1">
                         <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Upload Photos & Documents</label>
-                        <a href="photo-guide.png" target="_blank" class="text-[10px] font-bold text-brand-blue hover:text-brand-blueHover uppercase tracking-wide inline-flex items-center gap-1"><i class="fa-solid fa-circle-question"></i> View Photo Guide</a>
+                        <a href="photo-guide.png" target="_blank" data-photo-guide class="text-[10px] font-bold text-brand-blue hover:text-brand-blueHover uppercase tracking-wide inline-flex items-center gap-1"><i class="fa-solid fa-circle-question"></i> View Photo Guide</a>
                     </div>
                     <div class="grid grid-cols-1 gap-2.5">
                         <div class="relative w-full p-4 bg-slate-50 border border-dashed border-slate-600 hover:border-cyan-400/70 rounded-xl text-center cursor-pointer">
@@ -541,7 +550,7 @@
                     <p class="text-[10px] text-slate-500 leading-relaxed">(Your vehicle's age, mileage, and make were already checked when you registered.)</p>
                     <label class="flex items-start gap-2 cursor-pointer select-none">
                         <input type="checkbox" class="presubmit-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
-                        <span class="text-[11px] text-slate-700 leading-snug">I have taken and uploaded all photos required by the <a href="photo-guide.png" target="_blank" class="text-brand-blue underline font-semibold">Vehicle Photo Guide</a> (all 4 corners, VIN, odometer, engine bay, and all 4 open doors).</span>
+                        <span class="text-[11px] text-slate-700 leading-snug">I have taken and uploaded all photos required by the <a href="photo-guide.png" target="_blank" data-photo-guide class="text-brand-blue underline font-semibold">Vehicle Photo Guide</a> (all 4 corners, VIN, odometer, engine bay, and all 4 open doors).</span>
                     </label>
                     <label class="flex items-start gap-2 cursor-pointer select-none">
                         <input type="checkbox" class="presubmit-check mt-0.5 w-4 h-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer">
@@ -633,12 +642,12 @@
                     <i class="fa-solid fa-mobile-screen-button text-lg"></i>
                     <h3 class="text-sm font-black text-brand-blue uppercase tracking-wider">Install App Guide</h3>
                 </div>
-                <button type="button" id="closeInstallGuideBtn" class="text-slate-400 hover:text-white text-base font-bold px-2 py-0.5 rounded-lg"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" id="closeInstallGuideBtn" class="text-slate-400 hover:text-slate-700 text-base font-bold px-2 py-0.5 rounded-lg"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <!-- TAB SELECTOR SWITCH -->
             <div class="grid grid-cols-3 gap-1 bg-white p-1 rounded-xl border border-slate-200 text-[10px] font-bold uppercase tracking-wider text-center">
-                <button type="button" id="tabGuideIos" class="py-2 rounded-lg transition"> iOS</button>
+                <button type="button" id="tabGuideIos" class="py-2 rounded-lg transition"><i class="fa-brands fa-apple mr-1"></i>iOS</button>
                 <button type="button" id="tabGuideAndroid" class="py-2 rounded-lg transition"><i class="fa-brands fa-android mr-1"></i>Android</button>
                 <button type="button" id="tabGuideDesktop" class="py-2 rounded-lg transition"><i class="fa-solid fa-desktop mr-1"></i>Desktop</button>
             </div>
@@ -647,9 +656,9 @@
             <div id="guideContentIos" class="hidden space-y-3 text-xs text-slate-700">
                 <p class="text-[11px] text-brand-blue font-bold uppercase tracking-wide">For iPhone & iPad (Safari):</p>
                 <ol class="space-y-2.5 list-decimal list-inside pl-1 text-slate-500 font-normal leading-relaxed">
-                    <li>Tap Safari's <strong class="text-white">Share button</strong> <span class="bg-slate-800 px-1.5 py-0.5 rounded text-brand-blue border border-slate-700">⎋ / ⍎</span> at the bottom of your screen.</li>
-                    <li>Scroll down the menu and tap <strong class="text-white">"Add to Home Screen"</strong> <i class="fa-solid fa-plus text-brand-blue"></i>.</li>
-                    <li>Tap <strong class="text-white">"Add"</strong> in the top-right corner to place the app on your home screen.</li>
+                    <li>Tap Safari's <strong class="text-slate-900">Share button</strong> <span class="bg-slate-100 px-1.5 py-0.5 rounded text-brand-blue border border-slate-300"><i class="fa-solid fa-arrow-up-from-bracket"></i></span> at the bottom of your screen.</li>
+                    <li>Scroll down the menu and tap <strong class="text-slate-900">"Add to Home Screen"</strong> <i class="fa-solid fa-plus text-brand-blue"></i>.</li>
+                    <li>Tap <strong class="text-slate-900">"Add"</strong> in the top-right corner to place the app on your home screen.</li>
                 </ol>
             </div>
 
@@ -657,9 +666,9 @@
             <div id="guideContentAndroid" class="hidden space-y-3 text-xs text-slate-700">
                 <p class="text-[11px] text-brand-blue font-bold uppercase tracking-wide">For Android Devices (Chrome):</p>
                 <ol class="space-y-2.5 list-decimal list-inside pl-1 text-slate-500 font-normal leading-relaxed">
-                    <li>Tap Chrome's <strong class="text-white">Menu icon</strong> <span class="bg-slate-800 px-1.5 py-0.5 rounded text-brand-blue border border-slate-700">⋮</span> in the top-right corner.</li>
-                    <li>Select <strong class="text-white">"Install app"</strong> or <strong class="text-white">"Add to Home screen"</strong>.</li>
-                    <li>Tap <strong class="text-white">"Install"</strong> in the popup prompt to confirm.</li>
+                    <li>Tap Chrome's <strong class="text-slate-900">Menu icon</strong> <span class="bg-slate-100 px-1.5 py-0.5 rounded text-brand-blue border border-slate-300"><i class="fa-solid fa-ellipsis-vertical"></i></span> in the top-right corner.</li>
+                    <li>Select <strong class="text-slate-900">"Install app"</strong> or <strong class="text-slate-900">"Add to Home screen"</strong>.</li>
+                    <li>Tap <strong class="text-slate-900">"Install"</strong> in the popup prompt to confirm.</li>
                 </ol>
             </div>
 
@@ -667,13 +676,31 @@
             <div id="guideContentDesktop" class="hidden space-y-3 text-xs text-slate-700">
                 <p class="text-[11px] text-brand-blue font-bold uppercase tracking-wide">For PC & Mac (Chrome / Edge):</p>
                 <ol class="space-y-2.5 list-decimal list-inside pl-1 text-slate-500 font-normal leading-relaxed">
-                    <li>Look at the right side of your browser's <strong class="text-white">Address Bar</strong> at the top.</li>
-                    <li>Click the <strong class="text-white">Install icon</strong> <span class="bg-slate-800 px-1.5 py-0.5 rounded text-brand-blue border border-slate-700">⤓</span> or <span class="bg-slate-800 px-1.5 py-0.5 rounded text-brand-blue border border-slate-700">⊕</span>.</li>
-                    <li>Click <strong class="text-white">"Install"</strong> to launch the portal as a standalone app.</li>
+                    <li>Look at the right side of your browser's <strong class="text-slate-900">Address Bar</strong> at the top.</li>
+                    <li>Click the <strong class="text-slate-900">Install icon</strong> <span class="bg-slate-100 px-1.5 py-0.5 rounded text-brand-blue border border-slate-300"><i class="fa-solid fa-download"></i></span> in the address bar, or open the browser menu <span class="bg-slate-100 px-1.5 py-0.5 rounded text-brand-blue border border-slate-300"><i class="fa-solid fa-ellipsis-vertical"></i></span> and choose <strong class="text-slate-900">"Install"</strong>.</li>
+                    <li>Click <strong class="text-slate-900">"Install"</strong> to launch the portal as a standalone app.</li>
                 </ol>
             </div>
 
             <button type="button" id="dismissInstallGuideBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition">Got It</button>
+        </div>
+    </div>
+
+    <!-- VEHICLE PHOTO GUIDE (opens in the page instead of a bare image) -->
+    <div id="photoGuideModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 z-50" role="dialog" aria-modal="true" aria-labelledby="photoGuideTitle">
+        <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-md max-h-[92vh] flex flex-col shadow-2xl">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+                <h3 id="photoGuideTitle" class="text-sm font-black text-brand-blue uppercase tracking-wider"><i class="fa-solid fa-camera mr-1.5"></i>Vehicle Photo Guide</h3>
+                <button type="button" id="closePhotoGuideBtn" class="text-slate-400 hover:text-slate-700 text-base px-2 py-0.5 rounded-lg" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="overflow-y-auto px-4 py-3 space-y-3">
+                <p class="text-xs text-slate-600 leading-relaxed">Please include: all four corners of the vehicle, the VIN plate, the odometer, the engine bay, and all four doors open. Daylight and a clear background help.</p>
+                <img src="photo-guide.png" alt="Vehicle photo guide showing the angles to photograph: four corners, VIN, odometer, engine bay and open doors" class="w-full rounded-lg border border-slate-200">
+            </div>
+            <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between gap-3">
+                <a href="photo-guide.png" target="_blank" rel="noopener" class="text-[11px] font-bold text-slate-500 hover:text-brand-blue uppercase tracking-wide">Open full size</a>
+                <button type="button" id="photoGuideDoneBtn" class="bg-brand-blue hover:bg-brand-blueHover text-white font-bold px-5 py-2 rounded-xl text-xs uppercase tracking-wider transition">Got It</button>
+            </div>
         </div>
     </div>
 
@@ -749,9 +776,20 @@
             return 'desktop';
         }
 
+        // Photo guide: show it in a window instead of sending people to a bare image
+        (function () {
+            const pg = document.getElementById('photoGuideModal');
+            const close = () => pg.classList.add('hidden');
+            document.querySelectorAll('a[data-photo-guide]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); pg.classList.remove('hidden'); }));
+            document.getElementById('closePhotoGuideBtn').addEventListener('click', close);
+            document.getElementById('photoGuideDoneBtn').addEventListener('click', close);
+            pg.addEventListener('click', e => { if (e.target === pg) close(); });
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+        })();
+
         function showGuideTab(targetOs) {
             [tabGuideIos, tabGuideAndroid, tabGuideDesktop].forEach(tab => {
-                tab.className = "py-2 rounded-lg text-slate-400 hover:text-white transition cursor-pointer";
+                tab.className = "py-2 rounded-lg text-slate-500 hover:text-slate-800 transition cursor-pointer";
             });
             [guideContentIos, guideContentAndroid, guideContentDesktop].forEach(c => c.classList.add('hidden'));
 
@@ -1391,7 +1429,7 @@
         // PRICING NOTE + DV ELIGIBILITY GATE TOGGLE
         const APPRAISAL_PRICING_NOTES = {
             "Diminished Value": "$199 to begin your appraisal. The remaining $299 is due only after the insurance company responds with an offer.",
-            "Total Loss": "$299 flat fee — independent evaluation of your vehicle's fair market value.",
+            "Total Loss": "$299 flat fee. We act as your appraiser under your own policy's appraisal clause to dispute the insurance company's total loss offer.",
             "Estate/Probate": "$299 flat fee — official valuation report for probate courts, estate distribution, or tax settlements.",
             "Bank & Collateral": "$299 flat fee — certified appraisal documentation for lenders and financial institutions.",
             "IRS Donation": "$299 flat fee — IRS tax-compliant written appraisal for vehicle donations exceeding federal thresholds.",
@@ -1405,6 +1443,7 @@
         document.getElementById('newShopClaims').addEventListener('change', (e) => {
             const val = e.target.value;
             pricingNote.innerText = APPRAISAL_PRICING_NOTES[val] || "";
+            document.getElementById('tlCheckPromo').classList.toggle('hidden', val !== "Total Loss");
             if (val === "Diminished Value") {
                 dvEligibilityGate.classList.remove('hidden');
                 dvMoneyBackBadge.classList.remove('hidden');
@@ -1596,6 +1635,9 @@
                 document.getElementById('uploadStep' + i).classList.toggle('hidden', i !== n);
             }
             currentUploadStep = n;
+            const isTL = globalAppraisalType === "Total Loss";
+            document.getElementById('tlOfferWrap').classList.toggle('hidden', !isTL);
+            document.getElementById('dateRepairedWrap').classList.toggle('hidden', isTL);
             uploadBackBtn.classList.toggle('hidden', n === 1);
             uploadNextBtn.classList.toggle('hidden', n === TOTAL_UPLOAD_STEPS);
             submitBtn.classList.toggle('hidden', n !== TOTAL_UPLOAD_STEPS);
@@ -2049,7 +2091,10 @@
                 address: document.getElementById('intakeAddress').value.trim(),
                 mailingAddress: document.getElementById('intakeMailingAddress').value.trim(),
                 insuranceCarrier: document.getElementById('intakeCarrier').value.trim(),
-                partyType: "3rd Party", // already certified during the DV eligibility checklist at registration
+                // 3rd Party for Diminished Value (already certified in the DV eligibility checklist at registration).
+                // Total Loss appraisal clause work runs through the client's own policy, so it is 1st Party.
+                partyType: globalAppraisalType === "Total Loss" ? "1st Party" : "3rd Party",
+                offerAmount: globalAppraisalType === "Total Loss" ? document.getElementById('intakeOfferAmount').value.replace(/[^0-9.]/g, '') : "",
                 dateOfLoss: document.getElementById('intakeDateOfLoss').value,
                 dateRepaired: document.getElementById('intakeDateRepaired').value,
                 adjusterName: document.getElementById('intakeAdjusterName').value.trim(),
