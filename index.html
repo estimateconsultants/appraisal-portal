@@ -139,7 +139,7 @@
         <h1 class="text-xl font-black font-serif text-slate-900 text-center leading-tight mb-2">Your Appraisal, Start to Finish</h1>
         <p class="text-xs text-slate-500 text-center leading-relaxed mb-5 px-2">
             Get live updates in your portal every step of the way, backed by our proprietary valuation formula and real-time market data — calculated for your vehicle's exact VIN.
-            <span id="portalDvGuaranteeNote" class="hidden block mt-1.5 font-semibold text-brand-blue">Diminished Value appraisals are backed by our money-back guarantee.</span>
+            <span id="portalDvGuaranteeNote" class="hidden block mt-1.5 font-semibold text-brand-blue">Self-service Diminished Value is $299 flat and includes your appraisal, demand letter template, and instructions. You handle insurer contact; no money-back guarantee applies. Ask us about optional full-service representation.</span>
             <span class="block mt-1.5">A real person is always just a message away if you need us.</span>
         </p>
 
@@ -266,7 +266,7 @@
                             <label class="block text-xs font-bold uppercase text-brand-blue tracking-wider mb-1">Appraisal Type</label>
                             <select id="newShopClaims" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-brand-blue cursor-pointer">
                                 <option value="" disabled selected class="text-slate-500">Select appraisal type...</option>
-                                <option value="Diminished Value" class="bg-white">Diminished Value Appraisal ($199 + $299)</option>
+                                <option value="Diminished Value" class="bg-white">Diminished Value - Self-Service ($299 flat, no guarantee)</option>
                                 <option value="Total Loss" class="bg-white">Total Loss - Appraisal Clause ($299)</option>
                                 <option value="Estate/Probate" class="bg-white">Estate & Probate Appraisal ($299)</option>
                                 <option value="Bank & Collateral" class="bg-white">Bank & Collateral Appraisal ($299)</option>
@@ -279,9 +279,9 @@
                                 <a href="https://estimateconsultants.com/total-loss-appraisal.html#offer-check" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 w-full py-2.5 text-[11px] font-bold uppercase tracking-wider text-brand-blue bg-white hover:bg-slate-50 border border-brand-blue rounded-lg transition"><i class="fa-solid fa-scale-balanced"></i> Check My Offer, Free</a>
                             </div>
                             <div id="dvMoneyBackBadge" class="hidden mt-2.5 bg-white border border-slate-200 rounded-xl p-3.5 text-left space-y-1.5">
-                                <p class="text-[10px] font-bold text-brand-blue uppercase tracking-widest"><i class="fa-solid fa-shield-halved mr-1"></i> Money-Back Guarantee</p>
+                                <p class="text-[10px] font-bold text-brand-blue uppercase tracking-widest"><i class="fa-solid fa-car mr-1"></i> Self-Service Diminished Value &middot; $299 Flat</p>
                                 <p class="text-[11px] text-slate-600 leading-snug">
-                                    <strong class="text-slate-800">$199 down</strong> to start, with the remaining <strong class="text-slate-800">$299 due only after</strong> the insurance company delivers an offer. If our full fee ($498) isn't covered by that offer, you get your money back.
+                                    <strong class="text-slate-800">Self-service is $299 flat</strong> for the appraisal, demand letter template, and instructions. You handle insurer contact; no money-back guarantee applies. Full-service representation is available separately for $199 + $299 ($498 total), with a money-back guarantee under its service agreement.
                                 </p>
                             </div>
                         </div>
@@ -561,7 +561,7 @@
                 <!-- WHAT HAPPENS NEXT -->
                 <div class="w-full bg-amber-50 border border-amber-200 rounded-xl p-3.5">
                     <p class="text-[11px] text-slate-700 leading-relaxed">
-                        <i class="fa-solid fa-clock text-brand-gold mr-1"></i> <strong>Within about 5 minutes</strong> of submitting, you'll receive an email with your Intake Form to review and sign<span id="dvInvoiceNote" class="hidden"> along with your $199 retainer invoice</span>. <strong>Both need to be completed before we can proceed</strong> with your appraisal.
+                        <i class="fa-solid fa-clock text-brand-gold mr-1"></i> <strong>Within about 5 minutes</strong> of submitting, you will receive an email with next steps for your appraisal request. If you choose full-service, the intake agreement and $199 retainer invoice will be provided separately.
                     </p>
                 </div>
 
@@ -1428,7 +1428,7 @@
 
         // PRICING NOTE + DV ELIGIBILITY GATE TOGGLE
         const APPRAISAL_PRICING_NOTES = {
-            "Diminished Value": "$199 to begin your appraisal. The remaining $299 is due only after the insurance company responds with an offer.",
+            "Diminished Value": "$299 flat for the appraisal, demand letter template, and instructions. You handle communication with the insurer. Payment is due before the report is delivered; no money-back guarantee applies. Ask us about full-service representation ($199 + $299; guarantee applies).",
             "Total Loss": "$299 flat fee. We act as your appraiser under your own policy's appraisal clause to dispute the insurance company's total loss offer.",
             "Estate/Probate": "$299 flat fee — official valuation report for probate courts, estate distribution, or tax settlements.",
             "Bank & Collateral": "$299 flat fee — certified appraisal documentation for lenders and financial institutions.",
@@ -1702,7 +1702,6 @@
             shopDisplay.innerText = globalShopName;
             authHeader.classList.remove('hidden');
             uploadForm.classList.remove('hidden');
-            document.getElementById('dvInvoiceNote').classList.toggle('hidden', globalAppraisalType !== "Diminished Value");
             document.getElementById('portalDvGuaranteeNote').classList.toggle('hidden', globalAppraisalType !== "Diminished Value");
             showUploadStep(1);
             prefillIntakeFromKnownData();
@@ -2261,8 +2260,8 @@
 
                 // 📈 GOOGLE ADS CONVERSION — fires once, right when a claim
                 // submission actually succeeds. Value matches actual pricing:
-                // $498 total for Diminished Value, $299 for Total Loss
-                // Appraisal Clause, $299 flat for every other appraisal type.
+                // $299 flat for the self-service Diminished Value appraisal, the
+                // Total Loss Appraisal Clause, and every other appraisal type.
                 //
                 // Total Loss redirects to its own dedicated thank-you page
                 // instead — that page fires the conversion itself on load,
@@ -2280,7 +2279,7 @@
                 if (typeof gtag === 'function') {
                     gtag('event', 'conversion', {
                         'send_to': GADS_CLAIM_SUBMITTED_LABEL,
-                        'value': globalAppraisalType === "Diminished Value" ? 498.00 : 299.00,
+                        'value': 299.00,
                         'currency': 'USD',
                         'transaction_id': 'claim-' + Date.now()
                     });
