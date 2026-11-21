@@ -140,7 +140,7 @@
         <h1 class="text-xl font-black font-serif text-slate-900 text-center leading-tight mb-2">Your Appraisal, Start to Finish</h1>
         <p class="text-xs text-slate-500 text-center leading-relaxed mb-5 px-2">
             Get live updates in your portal every step of the way, backed by our proprietary valuation formula and real-time market data — calculated for your vehicle's exact VIN.
-            <span id="portalDvGuaranteeNote" class="hidden block mt-1.5 font-semibold text-brand-blue">Self-service Diminished Value is $299 flat and includes your appraisal, demand letter template, and instructions. You handle insurer contact; no money-back guarantee applies. Ask us about optional full-service representation.</span>
+            <span id="portalDvGuaranteeNote" class="hidden block mt-1.5 font-semibold text-brand-blue">Self-service Diminished Value is $299 flat and includes your appraisal, demand letter template, and instructions. You handle insurer contact; no money-back guarantee applies. Ask us about optional full service, where we contact the insurer and support our valuation.</span>
             <span class="block mt-1.5">A real person is always just a message away if you need us.</span>
         </p>
 
@@ -282,7 +282,7 @@
                             <div id="dvMoneyBackBadge" class="hidden mt-2.5 bg-white border border-slate-200 rounded-xl p-3.5 text-left space-y-1.5">
                                 <p class="text-[10px] font-bold text-brand-blue uppercase tracking-widest"><i class="fa-solid fa-car mr-1"></i> Self-Service Diminished Value &middot; $299 Flat</p>
                                 <p class="text-[11px] text-slate-600 leading-snug">
-                                    <strong class="text-slate-800">Self-service is $299 flat</strong> for the appraisal, demand letter template, and instructions. You handle insurer contact; no money-back guarantee applies. Full-service representation is available separately for $299 + $199 ($498 total); the $199 isn&rsquo;t charged if the insurer&rsquo;s offer doesn&rsquo;t at least meet the $498 total.
+                                    <strong class="text-slate-800">Self-service is $299 flat</strong> for the appraisal, demand letter template, and instructions. You handle insurer contact; no money-back guarantee applies. Full service, where we contact the insurer and support our valuation, is available separately for $299 + $199 ($498 total); the $199 isn&rsquo;t charged if the insurer&rsquo;s offer doesn&rsquo;t at least meet the $498 total.
                                 </p>
                             </div>
                         </div>
@@ -1429,7 +1429,7 @@
 
         // PRICING NOTE + DV ELIGIBILITY GATE TOGGLE
         const APPRAISAL_PRICING_NOTES = {
-            "Diminished Value": "$299 flat for the appraisal, demand letter template, and instructions. You handle communication with the insurer. Payment is due before the report is delivered; no money-back guarantee applies. Ask us about full-service representation ($299 + $199).",
+            "Diminished Value": "$299 flat for the appraisal, demand letter template, and instructions. You handle communication with the insurer. Payment is due before the report is delivered; no money-back guarantee applies. Ask us about full service ($299 + $199), where we contact the insurer and support our valuation.",
             "Total Loss": "$299 flat fee. We act as your appraiser under your own policy's appraisal clause to dispute the insurance company's total loss offer.",
             "Estate/Probate": "$299 flat fee — official valuation report for probate courts, estate distribution, or tax settlements.",
             "Bank & Collateral": "$299 flat fee — certified appraisal documentation for lenders and financial institutions.",
@@ -1916,7 +1916,7 @@
                     if (invoiceUrl) {
                         actionButtonsHtml += `<a href="${invoiceUrl}" target="_blank" class="block text-center bg-brand-gold hover:bg-brand-goldHover text-white font-black text-xs py-2.5 px-3 rounded-xl shadow-md transition tracking-wider"><i class="fa-solid fa-credit-card mr-1"></i>Pay Invoice to Proceed</a>`;
                     }
-                    actionButtonsHtml += `<p class="text-[10px] font-bold text-orange-600 text-center pt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Your report and invoice were sent in two separate emails — payment is required before we proceed with representing your claim.</p>`;
+                    actionButtonsHtml += `<p class="text-[10px] font-bold text-orange-600 text-center pt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Your report and invoice were sent in two separate emails — payment is required before we proceed with your claim.</p>`;
                     actionButtonsHtml += `</div>`;
                 } else if (stageIndex === 4) {
                     actionButtonsHtml = `<div class="mt-3 space-y-2">`;
