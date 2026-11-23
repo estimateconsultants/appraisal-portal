@@ -250,7 +250,8 @@
                                 <input type="text" id="regCustomMake" placeholder="Make" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
                             </div>
                             <input type="text" id="regCustomModel" placeholder="Model" class="hidden mt-2 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
-                            <input type="text" id="regVehicleTrim" placeholder="Trim (optional), e.g. EX-L, XLT, Limited" class="mt-2 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
+                            <datalist id="regTrimList"></datalist>
+                            <input type="text" id="regVehicleTrim" list="regTrimList" autocomplete="off" placeholder="Trim (optional): pick or type, e.g. EX-L, XLT" class="mt-2 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
                             <p id="regClassicWarning" class="hidden mt-2 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800"><i class="fa-solid fa-circle-check mr-1"></i> Classic, collector, exotic and motorcycle owners are welcome. Choose Other and enter the make and model.</p>
                             <input type="number" id="regVehicleMileage" placeholder="Current mileage, e.g. 45000" class="w-full mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue">
                             <p id="regEligibilitySnapshot" class="hidden mt-2 p-2.5 rounded-lg text-[11px] leading-relaxed"></p>
@@ -957,6 +958,20 @@
         // The typed model box shows for "Other make" and "Other Model...", so a car that isn't in a menu is never lost.
         function toggleCustomModel() { const on = regVehicleMake.value === 'OTHER' || regVehicleModel.value === 'Other Model'; regCustomModel.classList.toggle('hidden', !on); if (on && !regCustomModel.value) setTimeout(() => regCustomModel.focus(), 0); }
         regVehicleModel.addEventListener('change', toggleCustomModel);
+        // Trim suggestions for the chosen year/make/model (same lookup as our calculators). Typing anything still works.
+        let regTrimReq = 0;
+        function loadRegTrims() {
+            const list = document.getElementById('regTrimList'), y = regVehicleYear.value, mk = regVehicleMake.value, md = regVehicleModel.value, req = ++regTrimReq;
+            list.innerHTML = '';
+            if (!y || !mk || mk === 'OTHER' || !md || md === 'Other Model') return;
+            fetch('https://car-trim-api.vercel.app/api/trims?' + new URLSearchParams({ year: y, make: mk, model: md })).then(r => r.json()).then(j => {
+                if (req !== regTrimReq) return;
+                const seen = {}; list.innerHTML = ((j && j.trims) || []).map(t => String(t && t.name || t)).filter(t => t && !seen[t.toLowerCase()] && (seen[t.toLowerCase()] = 1)).sort((a, b) => a.localeCompare(b))
+                    .map(t => '<option value="' + t.replace(/"/g, '&quot;') + '"></option>').join('');
+            }).catch(() => {});
+        }
+        regVehicleModel.addEventListener('change', loadRegTrims);
+        regVehicleYear.addEventListener('change', loadRegTrims);
         const regClassicWarning = document.getElementById('regClassicWarning');
 
         (function populateRegYearSelect() {
