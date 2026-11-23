@@ -1302,6 +1302,14 @@
                         newShopContainer.classList.remove('hidden');
                         showRegStep(1);
                         if (data.estimatorLead) prefillFromEstimatorLead(data.estimatorLead);
+                        // Coming from a Valuation Report ("Upgrade to a certified appraisal" link): fill in the vehicle from the link.
+                        try {
+                            if (urlParams.get('vehicle')) {
+                                prefillFromEstimatorLead({ vehicle: urlParams.get('vehicle'), mileage: urlParams.get('miles') || '', vin: urlParams.get('vin') || '' });
+                                const vrId = (urlParams.get('vr') || '').replace(/[^\w-]/g, ''), notes = document.getElementById('regVehicleNotes');
+                                if (vrId && notes && !notes.value) notes.value = 'Upgrading from Valuation Report ' + vrId + ' (its price is credited toward this appraisal).';
+                            }
+                        } catch (e) {}
                     }
                 }).catch(err => { 
                     alert("Lookup timed out. Please try again."); 
