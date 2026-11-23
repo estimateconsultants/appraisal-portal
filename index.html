@@ -240,7 +240,7 @@
                                 </select>
                                 <select id="regVehicleMake" class="col-span-2 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue cursor-pointer">
                                     <option value="">Make</option>
-                                    <option value="Acura">Acura</option><option value="Alfa Romeo">Alfa Romeo</option><option value="Audi">Audi</option><option value="BMW">BMW</option><option value="Buick">Buick</option><option value="Cadillac">Cadillac</option><option value="Chevrolet">Chevrolet</option><option value="Chrysler">Chrysler</option><option value="Dodge">Dodge</option><option value="FIAT">FIAT</option><option value="Ford">Ford</option><option value="Genesis">Genesis</option><option value="GMC">GMC</option><option value="Honda">Honda</option><option value="Hyundai">Hyundai</option><option value="Infiniti">Infiniti</option><option value="Jaguar">Jaguar</option><option value="Jeep">Jeep</option><option value="Kia">Kia</option><option value="Land Rover">Land Rover</option><option value="Lexus">Lexus</option><option value="Lincoln">Lincoln</option><option value="Maserati">Maserati</option><option value="Mazda">Mazda</option><option value="Mercedes-Benz">Mercedes-Benz</option><option value="MINI">MINI</option><option value="Mitsubishi">Mitsubishi</option><option value="Nissan">Nissan</option><option value="Porsche">Porsche</option><option value="RAM">RAM</option><option value="Subaru">Subaru</option><option value="Tesla">Tesla</option><option value="Toyota">Toyota</option><option value="Volkswagen">Volkswagen</option><option value="Volvo">Volvo</option><option value="OTHER">Other Make...</option>
+                                    <option value="Acura">Acura</option><option value="Alfa Romeo">Alfa Romeo</option><option value="Aston Martin">Aston Martin</option><option value="Audi">Audi</option><option value="Bentley">Bentley</option><option value="BMW">BMW</option><option value="Buick">Buick</option><option value="Cadillac">Cadillac</option><option value="Can-Am">Can-Am</option><option value="Chevrolet">Chevrolet</option><option value="Chrysler">Chrysler</option><option value="Dodge">Dodge</option><option value="Ducati">Ducati</option><option value="Ferrari">Ferrari</option><option value="Fiat">Fiat</option><option value="FIAT">FIAT</option><option value="Fisker">Fisker</option><option value="Ford">Ford</option><option value="Genesis">Genesis</option><option value="GMC">GMC</option><option value="Harley-Davidson">Harley-Davidson</option><option value="Honda">Honda</option><option value="Honda Powersports">Honda Powersports</option><option value="Hummer">Hummer</option><option value="Hyundai">Hyundai</option><option value="Indian">Indian</option><option value="Infiniti">Infiniti</option><option value="Isuzu">Isuzu</option><option value="Jaguar">Jaguar</option><option value="Jeep">Jeep</option><option value="Kawasaki">Kawasaki</option><option value="Kia">Kia</option><option value="Lamborghini">Lamborghini</option><option value="Land Rover">Land Rover</option><option value="Lexus">Lexus</option><option value="Lincoln">Lincoln</option><option value="Lotus">Lotus</option><option value="Lucid">Lucid</option><option value="Maserati">Maserati</option><option value="Mazda">Mazda</option><option value="McLaren">McLaren</option><option value="Mercedes-Benz">Mercedes-Benz</option><option value="Mercury">Mercury</option><option value="Mini">Mini</option><option value="MINI">MINI</option><option value="Mitsubishi">Mitsubishi</option><option value="Nissan">Nissan</option><option value="Polaris">Polaris</option><option value="Polestar">Polestar</option><option value="Pontiac">Pontiac</option><option value="Porsche">Porsche</option><option value="RAM">RAM</option><option value="Rivian">Rivian</option><option value="Rolls-Royce">Rolls-Royce</option><option value="Saab">Saab</option><option value="Saturn">Saturn</option><option value="Scion">Scion</option><option value="Smart">Smart</option><option value="Subaru">Subaru</option><option value="Suzuki">Suzuki</option><option value="Tesla">Tesla</option><option value="Toyota">Toyota</option><option value="Triumph">Triumph</option><option value="Volkswagen">Volkswagen</option><option value="Volvo">Volvo</option><option value="Yamaha">Yamaha</option><option value="OTHER">Other Make...</option>
                                 </select>
                             </div>
                             <select id="regVehicleModel" disabled class="w-full mt-2 p-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-blue disabled:opacity-60 cursor-pointer">
@@ -986,7 +986,7 @@
 
         (function populateRegYearSelect() {
             const currentYear = new Date().getFullYear();
-            for (let y = currentYear; y >= currentYear - 15; y--) {
+            for (let y = currentYear + 1; y >= 1981; y--) {
                 regVehicleYear.innerHTML += `<option value="${y}">${y}</option>`;
             }
         })();
@@ -1009,14 +1009,39 @@
                 return;
             }
 
-            const models = CLEAN_PASSENGER_MODELS_MAP[make];
-            if (models && models.length > 0) {
-                regVehicleModel.innerHTML = '<option value="">-- Select Model --</option>' + models.map(m => `<option value="${m}">${m}</option>`).join('') + '<option value="Other Model">Other Model...</option>';
-            } else {
-                regVehicleModel.innerHTML = '<option value="Standard Model">Standard Model</option><option value="Other Model">Other Model...</option>';
-            }
-            regVehicleModel.disabled = false;
+            loadRegModels();
         });
+        regVehicleYear.addEventListener('change', () => { if (regVehicleMake.value && regVehicleMake.value !== 'OTHER') loadRegModels(); });
+
+        // Every model for the chosen make (and year, when picked): our short list plus NHTSA's full list, so nothing is missing.
+        // A model asked for before the list arrived (pre-fill from a Valuation Report link) is selected once it loads.
+        let pendingRegModel = '', regModelsReq = 0;
+        function fillRegModels(list, final) {
+            const prev = regVehicleModel.value, seen = {}, models = list.filter(m => { const k = String(m).toLowerCase(); if (!m || seen[k]) return false; seen[k] = 1; return true; }).sort((a, b) => a.localeCompare(b));
+            regVehicleModel.innerHTML = '<option value="">-- Select Model --</option>' + models.map(m => `<option value="${String(m).replace(/"/g, '&quot;')}">${m}</option>`).join('') + '<option value="Other Model">Other Model...</option>';
+            regVehicleModel.disabled = false;
+            const want = pendingRegModel || (prev && prev !== 'Other Model' ? prev : '');
+            if (want) selectRegModel(want, final || !pendingRegModel);
+        }
+        function selectRegModel(want, final) {
+            const w = String(want).toLowerCase().trim(), opts = Array.from(regVehicleModel.options).filter(o => o.value && o.value !== 'Other Model').sort((a, b) => b.value.length - a.value.length); // longest match first (Range Rover Sport before Range Rover)
+            const hit = opts.find(o => o.value.toLowerCase() === w) || opts.find(o => w.indexOf(o.value.toLowerCase()) === 0) || opts.find(o => o.value.toLowerCase().indexOf(w) === 0) || opts.find(o => w.indexOf(o.value.toLowerCase()) >= 0);
+            if (hit) regVehicleModel.value = hit.value;
+            else if (final) { const o = document.createElement('option'); o.value = want; o.textContent = want; regVehicleModel.insertBefore(o, regVehicleModel.lastElementChild); regVehicleModel.value = want; }
+            else return; // wait for the full list
+            if (final) pendingRegModel = '';
+            try { updateEligibilitySnapshot(); } catch (e) {}
+        }
+        function loadRegModels() {
+            const make = regVehicleMake.value, year = regVehicleYear.value, base = CLEAN_PASSENGER_MODELS_MAP[make] || [], req = ++regModelsReq;
+            fillRegModels(base, false);
+            const url = 'https://vpic.nhtsa.dot.gov/api/vehicles/' + (year ? 'GetModelsForMakeYear/make/' + encodeURIComponent(make) + '/modelyear/' + year : 'GetModelsForMake/' + encodeURIComponent(make)) + '?format=json';
+            fetch(url).then(r => r.json()).then(j => {
+                if (req !== regModelsReq) return; // a newer choice came in
+                const more = ((j && j.Results) || []).map(x => x.Model_Name).filter(Boolean);
+                fillRegModels(base.concat(more), true);
+            }).catch(() => { if (req === regModelsReq) fillRegModels(base, true); });
+        }
 
         // Pre-fills the registration form from a prior DV estimator run,
         // matched by email — so someone who already told us their vehicle
@@ -1033,18 +1058,20 @@
             if (lead.vehicle) {
                 const parts = lead.vehicle.trim().split(/\s+/);
                 const year = parts[0] || '';
-                const make = parts[1] || '';
-                const model = parts.slice(2).join(' ');
+                const rest = parts.slice(1).join(' '), restL = rest.toLowerCase();
+                const mkOpt = Array.from(regVehicleMake.options).filter(o => o.value && o.value !== 'OTHER').sort((a, b) => b.value.length - a.value.length)
+                    .find(o => restL === o.value.toLowerCase() || restL.indexOf(o.value.toLowerCase() + ' ') === 0);
+                const make = mkOpt ? mkOpt.value : (parts[1] || '');   // two-word makes too (Land Rover, Alfa Romeo)
+                const model = mkOpt ? rest.slice(mkOpt.value.length).trim() : parts.slice(2).join(' ');
 
                 if (year && Array.from(regVehicleYear.options).some(o => o.value === year)) {
                     regVehicleYear.value = year;
                 }
-                if (make && Array.from(regVehicleMake.options).some(o => o.value === make)) {
-                    regVehicleMake.value = make;
+                const mk = make && Array.from(regVehicleMake.options).find(o => o.value && o.value.toLowerCase().replace(/[^a-z]/g, '') === make.toLowerCase().replace(/[^a-z]/g, ''));
+                if (mk) {
+                    regVehicleMake.value = mk.value;
+                    pendingRegModel = model || '';
                     regVehicleMake.dispatchEvent(new Event('change'));
-                    if (model && Array.from(regVehicleModel.options).some(o => o.value === model)) {
-                        regVehicleModel.value = model;
-                    }
                 }
             }
             updateEligibilitySnapshot();
