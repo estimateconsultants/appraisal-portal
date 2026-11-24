@@ -318,9 +318,11 @@ function claim(id) {
     const sub = got ? `<span class="d ok">Received: ${x.files.map((y) => esc(y.name)).join(', ')}</span>` : (x.note ? `<span class="d">${esc(x.note)}</span>` : '');
     return `<div class="li" id="n_${esc(x.id)}"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.name)}</span>${sub}<span class="d upst" hidden></span></span>${right}</div>`;
   };
-  const showOffer = f.kind === 'dv' || f.kind === 'tl';
+  const showOffer = f.kind === 'dv' || f.kind === 'tl', invs = f.invoices || [], dueInv = invs.filter((x) => x.status === 'due');
   view(`<div><div class="backrow"><a href="#" id="hm" class="back">${BACK}Your claims</a></div>
   <div class="claimhd"><p class="meta">${esc(shortType(f.type))}, file ${esc(f.fileId)}</p><h1 class="plate">${esc(f.vehicle)}</h1></div>
+  ${invs.length ? `<section class="sec"><h2 class="h2">Payments</h2><div class="list${dueInv.length ? ' need' : ''}">${invs.map((x) => `<div class="li"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.desc)}</span><span class="d${x.status === 'paid' ? ' ok' : ''}">${x.status === 'paid' ? 'Paid ' + esc(x.paidAt) : money(x.cents / 100) + ' due'}${x.note ? ', ' + esc(x.note) : ''}</span></span>${x.status === 'due' ? `<button class="btn red sm" type="button" data-pay="${esc(x.id)}">Pay ${money(x.cents / 100)}</button>` : `<span class="tag ok">${money(x.cents / 100)}</span>`}</div>`).join('')}</div>
+  ${dueInv.length ? '<p class="meta" style="margin-top:10px">Paid securely through Stripe. Your card details never reach us.</p>' : ''}</section>` : ''}
   ${`<section class="sec"><h2 class="h2">${open ? 'We need from you' : 'Your documents'} ${open ? `<span class="muted" style="font-weight:400">${open} to go</span>` : ''}</h2>
   <div class="list${open ? ' need' : ''}">${needs.map(row).join('')}${row(other || { id: 'other', name: 'Anything else', note: 'Other photos or documents you want us to have' })}</div>
   <p class="meta" style="margin-top:10px">Photos or PDFs. We’ll check each one and mark it when it’s good.</p></section>`}
@@ -334,6 +336,11 @@ function claim(id) {
   $('hm').onclick = (e) => { e.preventDefault(); history.replaceState(null, '', location.pathname); home(); };
   app.querySelectorAll('input[type=file][data-need]').forEach((inp) => { inp.onchange = () => { const list = [...inp.files]; inp.value = ''; if (list.length) uploadAll(f, inp.dataset.need, list); }; });
   app.querySelectorAll('.upbtn').forEach((l) => { l.tabIndex = 0; l.setAttribute('role', 'button'); l.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $(l.htmlFor).click(); } }; });
+  app.querySelectorAll('[data-pay]').forEach((b) => { b.onclick = async () => {
+    busy(b, true);
+    try { const j = await call('p2_pay', { fileId: f.fileId, invId: b.dataset.pay, lang: window.EC_LANG || 'en' }); if (j.paid) { S.files = j.files || S.files; snap.save(); return claim(id); } if (!j.ok || !j.url) { busy(b, false); return toast(j.message || 'Payments aren’t available right now.'); } location.href = j.url; }
+    catch (e) { busy(b, false); toast('Couldn’t open the payment page. Check your connection and try again.'); }
+  }; });
   if ($('oe')) $('oe').onclick = () => { S.editOffer = 1; claim(id); };
   if ($('of')) $('of').onsubmit = async (e) => {
     e.preventDefault(); const v = $('oa').value.replace(/[^\d.]/g, ''); if (!v) return toast('Enter the amount of the offer.');
@@ -417,6 +424,14 @@ $('meBtn').onclick = () => {
     } catch (e) {}
   }
   if (!S.token) return signIn();
+  const paidF = Q.get('paid'), paidI = Q.get('inv');
+  if (paidF && paidI) {
+    loading('Confirming your payment');
+    try { const j = await call('p2_pay_check', { fileId: paidF, invId: paidI, s: Q.get('s') || '' }); history.replaceState(null, '', location.pathname + '#' + paidF);
+      const m = await call('p2_me'); if (m.ok) { S.account = m.account; S.files = m.files || []; snap.save(); }
+      $('meBtn').hidden = false; claim(paidF); toast(j.paid ? 'Payment received. Thank you.' : 'We’re still confirming your payment. It will show here shortly.', 6000); return;
+    } catch (e) {}
+  }
   const had = snap.load();
   if (had) afterSignIn(); else loading('Opening your claim');
   try {
