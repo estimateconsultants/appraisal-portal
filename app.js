@@ -18,6 +18,13 @@ const store = { get(k) { try { return localStorage.getItem(k) || sessionStorage.
   set(k, v, keep) { try { (keep ? localStorage : sessionStorage).setItem(k, v); } catch (e) {} },
   del(k) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch (e) {} } };
 let S = { token: store.get('ec_tok'), account: null, files: [], email: '', setup: null };
+// Last known account and claims, so a returning client sees their claim instantly while the fresh copy loads.
+const snap = { save() { if (S.token) store.set('ec_snap', JSON.stringify({ a: S.account, f: S.files }), (() => { try { return !!localStorage.getItem('ec_tok'); } catch (e) { return false; } })()); },
+  load() { try { const o = JSON.parse(store.get('ec_snap') || 'null'); if (o && o.a) { S.account = o.a; S.files = o.f || []; return true; } } catch (e) {} return false; } };
+// Wake the server as the page opens, so the first real request doesn't wait on a cold start.
+try { fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: '{"action":"p2_ping"}' }).catch(() => {}); } catch (e) {}
+// Full-screen loader (the MarketTrue gauge) for the few steps that wait on the server.
+function loading(msg) { app.innerHTML = '<div class="loadr"><svg width="88" height="88" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 44a22 22 0 0 1 44 0" fill="none" stroke="#332c2f" stroke-width="6" stroke-linecap="round"/><path class="arc" d="M10 44a22 22 0 0 1 44 0" fill="none" stroke="#3ddc84" stroke-width="6" stroke-linecap="round"/><path class="ndl" d="M32 40 32 20" stroke="#fff" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="40" r="5" fill="#fff"/></svg><p>' + esc(msg || 'Loading') + '</p></div>'; }
 
 // ---------- server ----------
 async function call(action, body) {
@@ -43,12 +50,14 @@ function signIn(msg) {
   <p class="small muted mt">Questions? Email <a href="mailto:customerservice@estimateconsultants.com">customerservice@estimateconsultants.com</a>.</p></div>`);
   $('f').onsubmit = async (e) => {
     e.preventDefault(); const b = $('go'), em = $('em').value.trim(); $('er').textContent = '';
-    busy(b, true);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { $('er').textContent = 'Please check the email address.'; return; }
+    // Go straight to the code screen; the request finishes in the background (back to this screen if the address isn't accepted).
+    S.email = em.toLowerCase(); codeStep();
     try {
       const j = await call('p2_code_request', { email: em });
-      if (!j.ok) { $('er').innerHTML = esc(j.message) + (j.suggest ? ` <a href="#" id="sg">Use ${esc(j.suggest)}</a>` : ''); if (j.suggest) $('sg').onclick = (ev) => { ev.preventDefault(); $('em').value = j.suggest; }; return; }
-      S.email = j.email; codeStep();
-    } catch (err) { $('er').textContent = 'Couldn’t send the code. Check your connection and try again.'; } finally { busy(b, false); }
+      if (!j.ok) { signIn(); $('er').innerHTML = esc(j.message) + (j.suggest ? ` <a href="#" id="sg">Use ${esc(j.suggest)}</a>` : ''); if (j.suggest) $('sg').onclick = (ev) => { ev.preventDefault(); $('em').value = j.suggest; }; return; }
+      S.email = j.email;
+    } catch (err) { signIn('Couldn’t send the code. Check your connection and try again.'); }
   };
 }
 function codeStep() {
@@ -78,7 +87,7 @@ function codeStep() {
     try {
       const j = await call('p2_code_verify', { email: S.email, code: val(), remember: $('rm').checked });
       if (!j.ok) { $('er').textContent = j.message; ins.forEach((x) => { x.value = ''; }); ins[0].focus(); return; }
-      S.token = j.token; store.set('ec_tok', j.token, $('rm').checked); S.account = j.account; S.files = j.files || [];
+      S.token = j.token; store.set('ec_tok', j.token, $('rm').checked); S.account = j.account; S.files = j.files || []; snap.save();
       afterSignIn();
     } catch (err) { $('er').textContent = 'Couldn’t check the code. Try again.'; } finally { busy(b, false); }
   };
@@ -98,7 +107,7 @@ function profile() {
   <p class="err" id="er"></p><button class="btn red" id="go" type="submit">Continue ${ARROW}</button></form></div>`);
   $('f').onsubmit = async (e) => {
     e.preventDefault(); const b = $('go'); busy(b, true); $('er').textContent = '';
-    try { const j = await call('p2_profile', { name: $('nm').value, phone: $('ph').value }); if (!j.ok) { $('er').textContent = j.message; return; } S.account = j.account; afterSignIn(); }
+    try { const j = await call('p2_profile', { name: $('nm').value, phone: $('ph').value }); if (!j.ok) { $('er').textContent = j.message; return; } S.account = j.account; snap.save(); afterSignIn(); }
     catch (err) { $('er').textContent = 'Couldn’t save. Try again.'; } finally { busy(b, false); }
   };
 }
@@ -216,12 +225,12 @@ function renderSetup() {
     <div class="stack mt"><button class="btn red" type="button" id="ok">Looks right · continue ${ARROW}</button><button class="btn ghost" type="button" id="ch">Change something</button></div><p class="err" id="er"></p>`);
     $('ch').onclick = () => { s.i = 1; s.dir = 'rev'; renderSetup(); };
     $('ok').onclick = async () => {
-      const b = $('ok'); busy(b, true);
+      const b = $('ok'); busy(b, true); const keep = app.innerHTML; loading('Setting up your claim');
       try {
         const j = await call('p2_setup', { setup: { type: s.type, zip: s.zip, answers: s.a, vehicle: s.vehicle } });
-        if (!j.ok) { if (j.reason === 'qualify') return stopScreen(j.why); $('er').textContent = j.message || 'Couldn’t save your claim. Try again.'; return; }
-        S.files = j.files || S.files; S.setup = null; toast(j.existing ? 'This vehicle already has a file. Here it is.' : 'Your claim is set up.'); claim(j.fileId);
-      } catch (e) { $('er').textContent = 'Couldn’t save your claim. Check your connection and try again.'; } finally { busy(b, false); }
+        if (!j.ok) { if (j.reason === 'qualify') return stopScreen(j.why); renderSetup(); toast(j.message || 'Couldn’t save your claim. Try again.'); return; }
+        S.files = j.files || S.files; S.setup = null; snap.save(); toast(j.existing ? 'This vehicle already has a file. Here it is.' : 'Your claim is set up.'); claim(j.fileId);
+      } catch (e) { renderSetup(); toast('Couldn’t save your claim. Check your connection and try again.'); }
     };
   }
   $('bk').onclick = () => { if (s.i <= 0 || (s.i === 1 && !S.files.length && false)) return home(); s.i--; s.dir = 'rev'; if (s.i === 0) s.type = ''; renderSetup(); };
@@ -240,6 +249,7 @@ function shortType(t) { t = String(t || ''); return /diminished/i.test(t) ? 'Dim
 function nowStep(f) { const s = (f.steps || []).find((x) => !x.done); return s ? (s.note || s.name) : 'In progress'; }
 function claim(id) {
   const f = S.files.find((x) => x.fileId === id); if (!f) return home();
+  history.replaceState(null, '', '#' + id);
   const steps = f.steps || [], cur = steps.findIndex((x) => !x.done), needs = (f.needs || []).filter((x) => !x.done), ups = f.updates || [];
   view(`<div style="margin-top:20px"><a href="#" id="hm" class="small" style="font-weight:600;text-decoration:none;display:inline-flex;min-height:44px;align-items:center">← Your claims</a>
   <p class="k" style="margin-top:6px">${esc(shortType(f.type))} · File ${esc(f.fileId)}</p><h1 class="big">${esc(f.vehicle)}</h1>
@@ -249,7 +259,7 @@ function claim(id) {
   ${needs.length ? `<div class="card hot mt-s"><p class="k">Waiting on you · ${needs.length}</p><div class="stack" style="gap:10px">${needs.map((x) => `<div class="row"><div class="bd"><div class="nm">${esc(x.name)}</div>${x.note ? `<div class="small muted">${esc(x.note)}</div>` : ''}</div><span class="small muted">Upload soon</span></div>`).join('')}</div></div>` : ''}
   ${ups.length ? `<div class="card mt-s"><p class="k">Latest update</p>${ups.slice(-1).map((u) => `<p style="margin:0;color:var(--text)">${esc(u.text)}</p><p class="small muted" style="margin:8px 0 0">${esc(u.date || '')}</p>`).join('')}</div>` : ''}
   <p class="small muted mt">Questions? Email <a href="mailto:customerservice@estimateconsultants.com">customerservice@estimateconsultants.com</a>.</p></div>`);
-  $('hm').onclick = (e) => { e.preventDefault(); home(); };
+  $('hm').onclick = (e) => { e.preventDefault(); history.replaceState(null, '', location.pathname); home(); };
 }
 
 // ---------- account menu ----------
@@ -257,13 +267,19 @@ $('meBtn').onclick = () => {
   const a = S.account || {};
   view(`<div style="margin-top:30px"><p class="k">Your account</p><h1 class="mid">${esc(a.name || a.email)}</h1><p class="lead">${esc(a.email)}${a.phone ? ' · ' + esc(a.phone) : ''}</p>
   <div class="stack mt"><button class="btn ghost" id="cl" type="button">Your claims</button><button class="btn ghost" id="so" type="button">Sign out</button></div></div>`);
-  $('cl').onclick = home; $('so').onclick = () => { store.del('ec_tok'); S = { token: null, files: [], email: a.email }; signIn(); };
+  $('cl').onclick = home; $('so').onclick = () => { store.del('ec_tok'); store.del('ec_snap'); S = { token: null, files: [], email: a.email }; signIn(); };
 };
 
 // ---------- start ----------
 (async function boot() {
   if (!S.token) return signIn();
-  try { const j = await call('p2_me'); if (!j.ok) return signIn(); S.account = j.account; S.files = j.files || []; afterSignIn(); }
-  catch (e) { if (S.token) app.innerHTML = '<p class="err" style="margin-top:80px">Couldn’t load your account. Check your connection and refresh.</p>'; }
+  const had = snap.load();
+  if (had) afterSignIn(); else loading('Opening your claim');
+  try {
+    const j = await call('p2_me'); if (!j.ok) return signIn();
+    const changed = JSON.stringify([j.account, j.files]) !== JSON.stringify([S.account, S.files]);
+    S.account = j.account; S.files = j.files || []; snap.save();
+    if (!had) afterSignIn(); else if (changed && !S.setup) { const open = (location.hash || '').slice(1); if (open && S.files.some((f) => f.fileId === open)) claim(open); else afterSignIn(); }
+  } catch (e) { if (!had && S.token) app.innerHTML = '<p class="err" style="margin-top:80px">Couldn’t load your account. Check your connection and refresh.</p>'; }
 })();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});

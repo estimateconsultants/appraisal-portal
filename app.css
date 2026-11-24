@@ -81,3 +81,9 @@ label.f{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0
 @keyframes spin{to{transform:rotate(360deg)}}
 .glow{position:fixed;width:620px;height:620px;right:-300px;top:-260px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,79,46,.22),rgba(255,79,46,0));pointer-events:none;z-index:-1}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.loadr{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:60vh;color:var(--soft);font-weight:600}
+.loadr .arc{stroke-dasharray:70;stroke-dashoffset:70;animation:arc 1.4s ease-in-out infinite}
+.loadr .ndl{transform-origin:32px 40px;animation:ndl 1.4s ease-in-out infinite}
+@keyframes arc{0%{stroke-dashoffset:70}60%,100%{stroke-dashoffset:0}}
+@keyframes ndl{0%{transform:rotate(-80deg)}60%{transform:rotate(70deg)}75%{transform:rotate(55deg)}100%{transform:rotate(-80deg)}}
+@media (prefers-reduced-motion:reduce){.loadr .arc,.loadr .ndl{animation:none}}
