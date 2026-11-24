@@ -343,12 +343,15 @@ function claim(id) {
   ${steps.length ? `<section class="sec"><h2 class="h2">Progress <span class="muted" style="font-weight:400">${done} of ${steps.length} done</span></h2>
   <ol class="tl">${steps.map((x, i) => `<li class="${x.done ? 'done' : i === cur ? 'now' : 'next'}"><span class="dot">${x.done ? CHECK : ''}</span><div><div class="nm">${esc(x.name)}</div>${x.date || x.note ? `<div class="sub">${esc([x.note, x.date].filter(Boolean).join(', '))}</div>` : ''}</div></li>`).join('')}</ol></section>` : ''}
   ${ups.length ? `<section class="sec"><h2 class="h2">Latest update</h2>${ups.slice(-1).map((u) => `<p class="upd">${esc(u.text)}</p><p class="meta" style="margin-top:6px">${esc(u.date || '')}</p>`).join('')}</section>` : ''}
+  ${lettersBlock(f)}
   <section class="sec"><h2 class="h2">Something not right?</h2>
   ${(f.issues || []).map((x) => `<p class="meta ok" style="margin:0 0 8px">We got your message from ${esc(x.at)}. We’ll look into it and get back to you by email.</p>`).join('')}
   <p class="meta" style="margin:0 0 10px">If something on this page looks wrong or you’re stuck, tell us here. It goes straight to your file.</p>
   <button class="btn ghost sm" type="button" id="iss">Tell us what’s wrong</button></section>
   <p class="small muted mt">Questions? Email <a href="mailto:customerservice@estimateconsultants.com">customerservice@estimateconsultants.com</a>.</p></div>`);
   $('iss').onclick = () => reportIssue(f, id);
+  app.querySelectorAll('[data-letter]').forEach((b) => { b.onclick = () => openLetter(f, id, b.dataset.letter); });
+  app.querySelectorAll('[data-saved]').forEach((b) => { b.onclick = () => getLetter(f, b, b.dataset.saved); });
   $('hm').onclick = (e) => { e.preventDefault(); history.replaceState(null, '', location.pathname); home(); };
   app.querySelectorAll('input[type=file][data-need]').forEach((inp) => { inp.onchange = () => { const list = [...inp.files]; inp.value = ''; if (list.length) uploadAll(f, inp.dataset.need, list); }; });
   app.querySelectorAll('.upbtn').forEach((l) => { l.tabIndex = 0; l.setAttribute('role', 'button'); l.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $(l.htmlFor).click(); } }; });
@@ -430,6 +433,108 @@ function askChoice(title, text, yes) {
     m.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h2 class="h2">${esc(title)}</h2><p class="meta" style="margin:0 0 16px">${esc(text)}</p><div class="stack"><button class="btn ghost" type="button" data-a="1">${esc(yes)}</button><button class="btn ghost" type="button" data-a="0">Go back</button></div></div>`;
     document.body.appendChild(m); m.querySelectorAll('button').forEach((b) => { b.onclick = () => { m.remove(); res(b.dataset.a === '1'); }; }); m.querySelector('button').focus();
   });
+}
+// ---------- letters the client can fill in, print, email to themselves or save on the claim ----------
+const LT = (f) => f.letter || {};
+const fmt$ = (n) => { const v = Number(String(n || '').replace(/[^\d.]/g, '')); return v ? '$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 }) : ''; };
+const todayStr = () => new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+const SELF = (f) => /self[- ]service/i.test(f.type || '');
+const LETTERS = {
+  demand: {
+    title: 'Diminished value demand letter', sub: 'To the at-fault driver’s insurer, asking them to pay your diminished value.',
+    when: (f) => f.kind === 'dv' && SELF(f),
+    fields: (f) => [['carrier', 'Insurance company', LT(f).carrier], ['adj', 'Adjuster’s name', LT(f).adj], ['claim', 'Claim number', LT(f).claim], ['atFault', 'Their insured (the at-fault driver)', LT(f).atFault],
+      ['dol', 'Date of the accident', LT(f).dol], ['vin', 'VIN', LT(f).vin], ['amount', 'Diminished value from your appraisal', fmt$(LT(f).dv)], ['days', 'Days to respond', '30'],
+      ['name', 'Your name', LT(f).name || (S.account || {}).name], ['address', 'Your mailing address', String(LT(f).address || '').replace(/\s*\n\s*/g, ', ')], ['phone', 'Your phone', fmtPhone((S.account || {}).phone || '')], ['email', 'Your email', (S.account || {}).email]],
+    body: (v, f) => [todayStr(), [v.carrier, v.adj ? 'Attn: ' + v.adj : ''].filter(Boolean).join('\n'),
+      ['Re: Diminished value claim', v.claim ? 'Claim number: ' + v.claim : '', v.atFault ? 'Your insured: ' + v.atFault : '', v.dol ? 'Date of loss: ' + v.dol : '', 'Vehicle: ' + [f.vehicle, v.vin ? 'VIN ' + v.vin : ''].filter(Boolean).join(', ')].filter(Boolean).join('\n'),
+      'Dear ' + (v.adj || 'Claims Adjuster') + ',',
+      'I am making a claim for the diminished value of my vehicle, which was damaged in the accident on ' + (v.dol || '[date]') + ' caused by your insured. Even after proper repairs, a vehicle with an accident on its history sells for less than the same vehicle without one.',
+      'An independent appraisal from Estimate Consultants puts the diminished value of my vehicle at ' + (v.amount || '[amount]') + '. A copy of the appraisal is enclosed.',
+      'Please pay ' + (v.amount || '[amount]') + ' for the diminished value of my vehicle. I ask for a written response within ' + (v.days || '30') + ' days of the date of this letter. If you disagree with the amount, please explain in writing how you reached your figure and send me any appraisal or valuation you relied on.',
+      'You can reach me at ' + [v.phone, v.email].filter(Boolean).join(' or ') + '.',
+      'Sincerely,\n\n\n' + (v.name || '') + (v.address ? '\n' + v.address : '')]
+  },
+  followup: {
+    title: 'Follow-up letter', sub: 'If the insurer hasn’t answered your demand.',
+    when: (f) => f.kind === 'dv' && SELF(f),
+    fields: (f) => [['carrier', 'Insurance company', LT(f).carrier], ['adj', 'Adjuster’s name', LT(f).adj], ['claim', 'Claim number', LT(f).claim], ['sent', 'Date you sent your demand', ''],
+      ['amount', 'Amount you asked for', fmt$(LT(f).dv)], ['days', 'Days to respond', '14'], ['name', 'Your name', LT(f).name || (S.account || {}).name], ['phone', 'Your phone', fmtPhone((S.account || {}).phone || '')], ['email', 'Your email', (S.account || {}).email]],
+    body: (v, f) => [todayStr(), [v.carrier, v.adj ? 'Attn: ' + v.adj : ''].filter(Boolean).join('\n'),
+      ['Re: Diminished value claim, follow-up', v.claim ? 'Claim number: ' + v.claim : '', 'Vehicle: ' + f.vehicle].filter(Boolean).join('\n'),
+      'Dear ' + (v.adj || 'Claims Adjuster') + ',',
+      'On ' + (v.sent || '[date]') + ', I sent you a demand for ' + (v.amount || '[amount]') + ' for the diminished value of my vehicle, along with an independent appraisal. I have not received a response.',
+      'Please respond in writing within ' + (v.days || '14') + ' days of the date of this letter, either with payment or with an explanation of your position and any valuation you relied on.',
+      'You can reach me at ' + [v.phone, v.email].filter(Boolean).join(' or ') + '.',
+      'Sincerely,\n\n\n' + (v.name || '')]
+  },
+  smallclaims: {
+    title: 'Small claims prep sheet', sub: 'What to gather and know before filing. Print it and fill in the blanks.', sheet: true,
+    when: (f) => f.kind === 'dv' && (SELF(f) || (f.decision && f.decision.choice === 'decline')),
+    fields: (f) => [['atFault', 'The at-fault driver (who you’d file against)', LT(f).atFault], ['carrier', 'Their insurance company', LT(f).carrier], ['claim', 'Claim number', LT(f).claim],
+      ['dol', 'Date of the accident', LT(f).dol], ['amount', 'Diminished value from your appraisal', fmt$(LT(f).dv)], ['offer', 'The insurer’s last offer', f.offer != null ? fmt$(f.offer) : '']],
+    body: (v, f) => {
+      const c = String(f.acc || '').toUpperCase(), st = STATES[c], opts = (OPTS[c] || []).filter((x) => /court/i.test(x));
+      return [
+        ['Your claim', 'Vehicle: ' + f.vehicle, 'Date of the accident: ' + (v.dol || '________'), 'Claim number: ' + (v.claim || '________'), 'Their insurer: ' + (v.carrier || '________'),
+          'Your appraisal: ' + (v.amount || '________') + '     Their last offer: ' + (v.offer || '________')].join('\n'),
+        ['Who you file against', 'In most states you file against the at-fault driver, not their insurance company: ' + (v.atFault || '________') + '. Their insurer usually handles the defense.'].join('\n'),
+        ['Where and how much', (opts.length ? opts.join(' ') : 'File in small claims court in the county where the accident happened or where the driver lives. Your state court’s website lists the limit and filing fee.'),
+          st ? 'You generally have ' + st.dl + ' years from the accident to file in ' + st.n + '.' : '', 'Filing fee: ________     Court: ________________'].filter(Boolean).join('\n'),
+        ['What to bring (three copies of each: the judge, the other side, you)', '☐ Your diminished value appraisal', '☐ The final repair invoice', '☐ Photos of the damage and the repaired car',
+          '☐ The police or accident report', '☐ Your demand letter and anything the insurer sent back', '☐ Proof of the insurer’s offers (letters or emails)', '☐ Proof the other driver was at fault (report, photos, witness names)'].join('\n'),
+        ['Timeline', 'Accident: ____________', 'Repairs done: ____________', 'Demand sent: ____________', 'Insurer’s answer: ____________', 'Filed: ____________', 'Hearing: ____________'].join('\n'),
+        'Notes\n\n\n\n'];
+    }
+  }
+};
+function lettersBlock(f) {
+  const avail = Object.keys(LETTERS).filter((k) => LETTERS[k].when(f)), saved = f.letters || [];
+  if (!avail.length && !saved.length) return '';
+  return `<section class="sec"><h2 class="h2">Letters and forms</h2><p class="meta" style="margin:0 0 10px">Fill these in with your details. Then print them, email them to yourself, or save them here.</p>
+  <div class="list">${avail.map((k) => `<div class="li"><span class="bd"><span class="nm" style="font-weight:600">${esc(LETTERS[k].title)}</span><span class="d">${esc(LETTERS[k].sub)}</span></span><button class="btn ghost sm" type="button" data-letter="${k}">Fill in</button></div>`).join('')}
+  ${saved.map((x) => `<div class="li"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.name)}</span><span class="d">Saved ${esc(x.at)}</span></span><button class="btn ghost sm" type="button" data-saved="${esc(x.id)}">Download</button></div>`).join('')}</div>
+  <p class="meta" style="margin-top:8px">General information, not legal advice.</p></section>`;
+}
+function letterHtml(title, parts, sheet) {
+  const p = (t) => esc(t).replace(/\n/g, '<br>');
+  const body = sheet ? parts.map((t) => { const [h, ...r] = t.split('\n'); return `<h2>${esc(h)}</h2><p>${p(r.join('\n'))}</p>`; }).join('') : parts.map((t) => `<p>${p(t)}</p>`).join('');
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>@page{margin:.9in}body{font:11.5pt/1.55 Georgia,'Times New Roman',serif;color:#111;margin:0}h1{font:700 16pt Arial,Helvetica,sans-serif;margin:0 0 4px}h2{font:700 11pt Arial,Helvetica,sans-serif;margin:18px 0 4px}p{margin:0 0 12px}.ft{margin-top:28px;padding-top:8px;border-top:1px solid #ccc;font:8.5pt Arial,Helvetica,sans-serif;color:#666}</style></head><body>${sheet ? `<h1>${esc(title)}</h1>` : ''}${body}<div class="ft">Prepared with Estimate Consultants, estimateconsultants.com${sheet ? '. General information, not legal advice.' : ''}</div></body></html>`;
+}
+function openLetter(f, id, key) {
+  const L = LETTERS[key], flds = L.fields(f), m = document.createElement('div'); m.className = 'sheet paysheet';
+  m.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true" aria-labelledby="ltt"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px"><h2 class="h2" id="ltt" style="margin:0">${esc(L.title)}</h2><button class="link" type="button" id="ltx">Close</button></div>
+    <div id="ltf" class="stack">${flds.map(([k, lab, val]) => `<div><label class="f" for="lf_${k}">${esc(lab)}</label><input class="in" id="lf_${k}" value="${esc(val || '')}"></div>`).join('')}
+    <button class="btn red" type="button" id="ltp">See the ${L.sheet ? 'sheet' : 'letter'}</button></div>
+    <div id="ltv" hidden><p class="meta" style="margin:0 0 8px">You can change any of the wording below before you print or save.</p><textarea class="in" id="ltt2" rows="16" style="height:auto;padding:14px 16px;line-height:1.5;resize:vertical;font-size:15px"></textarea>
+    <div class="stack mt-s"><button class="btn red" type="button" id="ltpr">Print</button><div class="grid2"><button class="btn ghost" type="button" id="ltem">Email it to me</button><button class="btn ghost" type="button" id="ltsv">Save to my claim</button></div><button class="link" type="button" id="ltbk" style="justify-self:start">Back to the details</button></div></div></div>`;
+  document.body.appendChild(m);
+  const close = () => m.remove(); $('ltx').onclick = close;
+  const vals = () => Object.fromEntries(flds.map(([k]) => [k, $('lf_' + k).value.trim()]));
+  const parts = () => $('ltt2').value.split(/\n{2,}(?=\S)/).map((x) => x.replace(/\s+$/, ''));
+  const step = (two) => { $('ltf').style.display = two ? 'none' : ''; $('ltv').hidden = !two; m.querySelector('.sheetbox').scrollTop = 0; };
+  $('ltp').onclick = () => { $('ltt2').value = L.body(vals(), f).join('\n\n'); step(true); };
+  $('ltbk').onclick = () => step(false);
+  $('ltpr').onclick = () => {
+    const fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0'; document.body.appendChild(fr);
+    fr.contentDocument.open(); fr.contentDocument.write(letterHtml(L.title, parts(), L.sheet)); fr.contentDocument.close();
+    setTimeout(() => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (e) { toast('Couldn’t open printing on this device. Try Email it to me.'); } setTimeout(() => fr.remove(), 60000); }, 300);
+  };
+  const save = async (b, send) => {
+    busy(b, true);
+    try { const r = await call('p2_letter', { fileId: f.fileId, kind: key, title: L.title, parts: parts(), sheet: !!L.sheet, send });
+      busy(b, false); if (!r.ok) return toast(r.message || 'Couldn’t save it.');
+      S.files = r.files || S.files; snap.save(); close(); toast(send ? 'Sent to ' + ((S.account || {}).email || 'your email') + '. It’s saved on your claim too.' : 'Saved to your claim.'); claim(id); }
+    catch (e) { busy(b, false); toast('Couldn’t save it. Check your connection and try again.'); }
+  };
+  $('ltem').onclick = () => save($('ltem'), true); $('ltsv').onclick = () => save($('ltsv'), false);
+}
+async function getLetter(f, b, lid) {
+  const t = b.textContent; b.disabled = true; b.textContent = 'Opening…';
+  try { const j = await call('p2_letter_get', { fileId: f.fileId, id: lid }); if (!j.ok) return toast(j.message || 'Couldn’t open it.');
+    const bin = atob(j.data), u = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k);
+    const url = URL.createObjectURL(new Blob([u], { type: 'application/pdf' })), a = document.createElement('a'); a.href = url; a.download = j.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000);
+  } catch (e) { toast('Couldn’t open it. Check your connection and try again.'); } finally { b.disabled = false; b.textContent = t; }
 }
 // "Something not right?": the client's note goes on the file and flags it for Kevin until he marks it handled.
 function reportIssue(f, id) {
