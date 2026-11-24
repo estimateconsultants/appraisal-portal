@@ -307,16 +307,94 @@ function nowStep(f) { const s = (f.steps || []).find((x) => !x.done); return s ?
 function claim(id) {
   const f = S.files.find((x) => x.fileId === id); if (!f) return home();
   history.replaceState(null, '', '#' + id);
-  const steps = f.steps || [], cur = steps.findIndex((x) => !x.done), needs = (f.needs || []).filter((x) => !x.done), ups = f.updates || [];
-  const done = steps.filter((x) => x.done).length;
+  const steps = f.steps || [], cur = steps.findIndex((x) => !x.done), ups = f.updates || [];
+  const needs = (f.needs || []).filter((x) => x.id !== 'other'), other = (f.needs || []).find((x) => x.id === 'other');
+  const open = needs.filter((x) => !x.done && !(x.files || []).length).length, done = steps.filter((x) => x.done).length;
+  const money = (n) => '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const row = (x) => {
+    const got = (x.files || []).length;
+    const right = x.done ? '<span class="tag ok">Checked</span>'
+      : `<label class="upbtn" for="u_${esc(x.id)}">${got ? 'Add more' : 'Upload'}</label><input type="file" id="u_${esc(x.id)}" data-need="${esc(x.id)}" accept="image/*,application/pdf" multiple hidden>`;
+    const sub = got ? `<span class="d ok">Received: ${x.files.map((y) => esc(y.name)).join(', ')}</span>` : (x.note ? `<span class="d">${esc(x.note)}</span>` : '');
+    return `<div class="li" id="n_${esc(x.id)}"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.name)}</span>${sub}<span class="d upst" hidden></span></span>${right}</div>`;
+  };
+  const showOffer = f.kind === 'dv' || f.kind === 'tl';
   view(`<div><div class="backrow"><a href="#" id="hm" class="back">${BACK}Your claims</a></div>
   <div class="claimhd"><p class="meta">${esc(shortType(f.type))}, file ${esc(f.fileId)}</p><h1 class="plate">${esc(f.vehicle)}</h1></div>
-  ${needs.length ? `<section class="sec"><h2 class="h2">We need from you</h2><div class="list need">${needs.map((x) => `<div class="li"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.name)}</span>${x.note ? `<span class="d">${esc(x.note)}</span>` : ''}</span><span class="tag">Needed</span></div>`).join('')}</div></section>` : ''}
+  ${`<section class="sec"><h2 class="h2">${open ? 'We need from you' : 'Your documents'} ${open ? `<span class="muted" style="font-weight:400">${open} to go</span>` : ''}</h2>
+  <div class="list${open ? ' need' : ''}">${needs.map(row).join('')}${row(other || { id: 'other', name: 'Anything else', note: 'Other photos or documents you want us to have' })}</div>
+  <p class="meta" style="margin-top:10px">Photos or PDFs. We’ll check each one and mark it when it’s good.</p></section>`}
+  ${showOffer ? `<section class="sec"><h2 class="h2">The insurer’s offer</h2>${f.offer != null && !S.editOffer ? `<p class="upd" style="font-size:20px;font-weight:600">${money(f.offer)}</p><p class="meta" style="margin-top:4px">${f.offerAt ? 'Entered ' + esc(f.offerAt) + '. ' : ''}<button class="link" type="button" id="oe">Change it</button></p>`
+    : `<form id="of" novalidate><label class="f" for="oa">Offer amount</label><div style="display:flex;gap:10px"><input class="in" id="oa" inputmode="decimal" placeholder="$0" value="${f.offer != null ? esc(f.offer) : ''}" style="max-width:220px"><button class="btn red sm" type="submit" id="os">Save</button></div>
+    <p class="meta" style="margin-top:8px">Add the offer letter or email above, under ${f.kind === 'tl' ? '“Offer letter or email”' : '“Anything else”'}, so we can check it.</p></form>`}</section>` : ''}
   ${steps.length ? `<section class="sec"><h2 class="h2">Progress <span class="muted" style="font-weight:400">${done} of ${steps.length} done</span></h2>
   <ol class="tl">${steps.map((x, i) => `<li class="${x.done ? 'done' : i === cur ? 'now' : 'next'}"><span class="dot">${x.done ? CHECK : ''}</span><div><div class="nm">${esc(x.name)}</div>${x.date || x.note ? `<div class="sub">${esc([x.note, x.date].filter(Boolean).join(', '))}</div>` : ''}</div></li>`).join('')}</ol></section>` : ''}
   ${ups.length ? `<section class="sec"><h2 class="h2">Latest update</h2>${ups.slice(-1).map((u) => `<p class="upd">${esc(u.text)}</p><p class="meta" style="margin-top:6px">${esc(u.date || '')}</p>`).join('')}</section>` : ''}
   <p class="small muted mt">Questions? Email <a href="mailto:customerservice@estimateconsultants.com">customerservice@estimateconsultants.com</a>.</p></div>`);
   $('hm').onclick = (e) => { e.preventDefault(); history.replaceState(null, '', location.pathname); home(); };
+  app.querySelectorAll('input[type=file][data-need]').forEach((inp) => { inp.onchange = () => { const list = [...inp.files]; inp.value = ''; if (list.length) uploadAll(f, inp.dataset.need, list); }; });
+  app.querySelectorAll('.upbtn').forEach((l) => { l.tabIndex = 0; l.setAttribute('role', 'button'); l.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $(l.htmlFor).click(); } }; });
+  if ($('oe')) $('oe').onclick = () => { S.editOffer = 1; claim(id); };
+  if ($('of')) $('of').onsubmit = async (e) => {
+    e.preventDefault(); const v = $('oa').value.replace(/[^\d.]/g, ''); if (!v) return toast('Enter the amount of the offer.');
+    const b = $('os'); busy(b, true);
+    try { const j = await call('p2_offer', { fileId: f.fileId, amount: v }); if (!j.ok) return toast(j.message || 'Couldn’t save the offer.'); S.files = j.files || S.files; S.editOffer = 0; snap.save(); toast('Offer saved.'); claim(id); }
+    catch (err) { toast('Couldn’t save the offer. Check your connection and try again.'); } finally { busy(b, false); }
+  };
+}
+
+// ---------- uploads: photo check, shrink, duplicate catch ----------
+function readAs(file, how) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r[how](file); }); }
+async function sha256(buf) {
+  try { const h = await crypto.subtle.digest('SHA-256', buf); return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join(''); }
+  catch (e) { const u = new Uint8Array(buf); let h1 = 0x811c9dc5, h2 = 0x01000193; for (let i = 0; i < u.length; i++) { h1 = Math.imul(h1 ^ u[i], 16777619) >>> 0; h2 = Math.imul(h2 ^ u[i], 2246822519) >>> 0; } return 'f' + h1.toString(16) + h2.toString(16) + u.length.toString(16); }
+}
+function loadImg(url) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; }); }
+// Dark, blurry or tiny photos get a second look before they're sent.
+function photoCheck(img) {
+  const w = 360, h = Math.max(1, Math.round(img.naturalHeight * w / img.naturalWidth)), c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); g.drawImage(img, 0, 0, w, h); const px = g.getImageData(0, 0, w, h).data, gray = new Float32Array(w * h);
+  let sum = 0; for (let i = 0; i < w * h; i++) { const v = 0.299 * px[i * 4] + 0.587 * px[i * 4 + 1] + 0.114 * px[i * 4 + 2]; gray[i] = v; sum += v; }
+  let n = 0, m = 0, m2 = 0; for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) { const i = y * w + x, l = gray[i - 1] + gray[i + 1] + gray[i - w] + gray[i + w] - 4 * gray[i]; n++; m += l; m2 += l * l; }
+  const varL = n ? m2 / n - (m / n) * (m / n) : 999, mean = sum / (w * h);
+  if (Math.min(img.naturalWidth, img.naturalHeight) < 600) return 'This photo is very small, so details may not show.';
+  if (mean < 40) return 'This photo looks too dark to read.';
+  if (varL < 20) return 'This photo looks blurry.';
+  return '';
+}
+function shrink(img) { const max = 2000, k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.85).split(',')[1]; }
+function askPhoto(name, why) {
+  return new Promise((res) => {
+    const m = document.createElement('div'); m.className = 'sheet';
+    m.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h2 class="h2">${esc(why)}</h2><p class="meta" style="margin:0 0 16px">${esc(name)}. A clear photo helps us get your appraisal right the first time.</p><div class="stack"><button class="btn red" type="button" data-a="0">Choose another photo</button><button class="btn ghost" type="button" data-a="1">Send it anyway</button></div></div>`;
+    document.body.appendChild(m); m.querySelectorAll('button').forEach((b) => { b.onclick = () => { m.remove(); res(b.dataset.a === '1'); }; }); m.querySelector('button').focus();
+  });
+}
+async function uploadAll(f, needId, list) {
+  const known = new Set([].concat(...(f.needs || []).map((n) => (n.files || []).map((x) => x.h))).filter(Boolean));
+  const st = () => document.querySelector('#n_' + CSS.escape(needId) + ' .upst');
+  let sent = 0, skipped = 0;
+  for (let k = 0; k < list.length; k++) {
+    const file = list[k], s = st(); if (s) { s.hidden = false; s.innerHTML = '<span class="sp" style="width:14px;height:14px;border-width:2px;vertical-align:-2px"></span> Sending ' + (k + 1) + ' of ' + list.length + '…'; }
+    try {
+      const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+      if (!isPdf && !/^image\//.test(file.type)) { toast(file.name + ': please use a photo or a PDF.'); skipped++; continue; }
+      if (file.size > 20 * 1048576) { toast(file.name + ' is over 20 MB.'); skipped++; continue; }
+      const buf = await readAs(file, 'readAsArrayBuffer'), hash = await sha256(buf);
+      if (hash && known.has(hash)) { toast('You already sent ' + file.name + '.'); skipped++; continue; }
+      let data, mime;
+      if (isPdf) { data = (await readAs(file, 'readAsDataURL')).split(',')[1]; mime = 'application/pdf'; }
+      else {
+        const url = URL.createObjectURL(file); let img; try { img = await loadImg(url); } catch (e) { toast('We couldn’t open ' + file.name + '. Try a JPG or PNG.'); skipped++; continue; } finally { setTimeout(() => URL.revokeObjectURL(url), 2000); }
+        const why = photoCheck(img); if (why && !(await askPhoto(file.name, why))) { skipped++; continue; }
+        data = shrink(img); mime = 'image/jpeg';
+      }
+      const j = await call('p2_upload', { fileId: f.fileId, need: needId, name: file.name, mime, data, hash });
+      if (!j.ok) { toast(j.message || 'Couldn’t send ' + file.name + '.'); skipped++; continue; }
+      if (hash) known.add(hash); S.files = j.files || S.files; sent++;
+    } catch (e) { toast('Couldn’t send ' + file.name + '. Check your connection and try again.'); skipped++; }
+  }
+  snap.save(); claim(f.fileId); if (sent) toast(sent === 1 ? 'Sent. We’ll check it and mark it when it’s good.' : sent + ' files sent. We’ll check them and mark them when they’re good.', 5000);
 }
 
 // ---------- account menu ----------
