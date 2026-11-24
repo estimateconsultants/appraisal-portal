@@ -17,7 +17,7 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const app = $('app');
 const Q = new URLSearchParams(location.search);
-const ARROW = '<span class="ar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>';
+const ARROW = '<span class="ar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>';
 const CHEV = '<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 const BACK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
 const CHECK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#121012" stroke-width="3.5" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
@@ -274,12 +274,12 @@ function renderSetup() {
     <div class="stack mt"><button class="btn red" type="button" id="ok">Set up my claim ${ARROW}</button><button class="btn ghost" type="button" id="ch">Change something</button></div><p class="err" id="er"></p>`);
     $('ch').onclick = () => { s.i = 1; s.dir = 'rev'; renderSetup(); };
     $('ok').onclick = async () => {
-      const b = $('ok'); busy(b, true); const keep = app.innerHTML; loading('Setting up your claim');
+      const b = $('ok'); busy(b, true); const keep = app.innerHTML; const pg = setupProgress();
       try {
         const j = await call('p2_setup', { setup: { type: s.type, zip: s.zip, answers: s.a, vehicle: s.vehicle, vr: s.vr || '', accState: DVT[s.type] ? accState().code : '', inv: s.inv || '' } });
-        if (!j.ok) { if (j.reason === 'qualify') return stopScreen(j.why); renderSetup(); toast(j.message || 'Couldn’t save your claim. Try again.'); return; }
-        S.files = j.files || S.files; S.setup = null; snap.save(); toast(j.existing ? 'This vehicle already has a file. Here it is.' : 'Your claim is set up.'); claim(j.fileId);
-      } catch (e) { renderSetup(); toast('Couldn’t save your claim. Check your connection and try again.'); }
+        if (!j.ok) { pg.stop(); if (j.reason === 'qualify') return stopScreen(j.why); renderSetup(); toast(j.message || 'Couldn’t save your claim. Try again.'); return; }
+        await pg.done(); S.files = j.files || S.files; S.setup = null; snap.save(); toast(j.existing ? 'This vehicle already has a file. Here it is.' : 'Your claim is set up.'); claim(j.fileId);
+      } catch (e) { pg.stop(); renderSetup(); toast('Couldn’t save your claim. Check your connection and try again.'); }
     };
   }
   $('bk').onclick = () => { if (s.i <= 0 || (s.i === 1 && !S.files.length && false)) return home(); s.i--; s.dir = 'rev'; if (s.i === 0) s.type = ''; renderSetup(); };
@@ -314,14 +314,17 @@ function claim(id) {
   const money = (n) => '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
   const row = (x) => {
     const got = (x.files || []).length;
+    const shots = isShotNeed(x), sd = shots ? shotsFor(f, x).filter((k) => shotDone(x, k)).length : 0, sn = shots ? shotsFor(f, x).length : 0;
     const right = x.done ? '<span class="tag ok">Checked</span>'
+      : shots ? `<button class="upbtn" type="button" data-shots="${esc(x.id)}">${sd ? 'Continue' : 'Start'}</button>`
       : `<label class="upbtn" for="u_${esc(x.id)}">${got ? 'Add more' : 'Upload'}</label><input type="file" id="u_${esc(x.id)}" data-need="${esc(x.id)}" accept="image/*,application/pdf" multiple hidden>`;
-    const sub = got ? `<span class="d ok">Received: ${x.files.map((y) => esc(y.name)).join(', ')}</span>` : (x.note ? `<span class="d">${esc(x.note)}</span>` : '');
+    const sub = shots ? `<span class="d${sd === sn ? ' ok' : ''}">${sd === sn ? 'All ' + sn + ' photos received' : sd + ' of ' + sn + ' photos. We’ll show you each one to take.'}</span>`
+      : got ? `<span class="d ok">Received: ${x.files.map((y) => esc(y.name)).join(', ')}</span>` : (x.note ? `<span class="d">${esc(x.note)}</span>` : '');
     return `<div class="li" id="n_${esc(x.id)}"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.name)}</span>${sub}<span class="d upst" hidden></span></span>${right}</div>`;
   };
   const showOffer = f.kind === 'dv' || f.kind === 'tl', invs = f.invoices || [], dueInv = invs.filter((x) => x.status === 'due'); const needSign = !!(f.agreement && !f.agreement.signed);
   view(`<div><div class="backrow"><a href="#" id="hm" class="back">${BACK}Your claims</a></div>
-  <div class="claimhd"><p class="meta">${esc(shortType(f.type))}, file ${esc(f.fileId)}</p><h1 class="plate">${esc(f.vehicle)}</h1></div>
+  ${heroHtml(f)}
   ${f.agreement ? `<section class="sec"><h2 class="h2">Your agreement</h2><div class="list${f.agreement.signed ? '' : ' need'}"><div class="li"><span class="bd"><span class="nm" style="font-weight:600">Appraisal agreement</span>${FULLSVC(f) ? '<span class="d">This allows us to speak to the insurer about your claim.</span>' : ''}<span class="d${f.agreement.signed ? ' ok' : ''}">${f.agreement.signed ? 'Signed' : 'Ready for you to sign'}</span></span>${f.agreement.signed ? '<span class="tag ok">Signed</span>' : `<a class="btn red sm" href="${esc(f.agreement.url)}">Sign</a>`}</div></div></section>` : ''}
   ${invs.length ? `<section class="sec"><h2 class="h2">Payments</h2><div class="list${dueInv.length ? ' need' : ''}">${invs.map((x) => `<div class="li"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.desc)}</span><span class="d${x.status === 'paid' ? ' ok' : ''}">${x.status === 'paid' ? 'Paid ' + esc(x.paidAt) : x.status === 'later' ? money(x.cents / 100) : x.status === 'waived' ? 'Waived' : money(x.cents / 100) + ' due'}${x.note ? ', ' + esc(x.note) : ''}</span></span>${x.status === 'due' && needSign ? `<button class="btn sm dim" type="button" disabled>Pay ${money(x.cents / 100)}</button>` : x.status === 'due' ? `<button class="btn red sm" type="button" data-pay="${esc(x.id)}">Pay ${money(x.cents / 100)}</button>` : x.status === 'later' ? '<button class="btn sm dim" type="button" disabled>Not yet due</button>' : x.status === 'waived' ? '<span class="tag ok">Waived</span>' : `<span class="tag ok">${money(x.cents / 100)}</span>`}</div>`).join('')}</div>
   ${dueInv.length ? `<p class="meta" style="margin-top:10px">${needSign ? 'Sign your agreement above, then you can pay here.' : 'Paid securely through Stripe. Your card details never reach us.'}</p>` : ''}</section>` : ''}
@@ -344,12 +347,14 @@ function claim(id) {
   <ol class="tl">${steps.map((x, i) => `<li class="${x.done ? 'done' : i === cur ? 'now' : 'next'}"><span class="dot">${x.done ? CHECK : ''}</span><div><div class="nm">${esc(x.name)}</div>${x.date || x.note ? `<div class="sub">${esc([x.note, x.date].filter(Boolean).join(', '))}</div>` : ''}</div></li>`).join('')}</ol></section>` : ''}
   ${ups.length ? `<section class="sec"><h2 class="h2">Latest update</h2>${ups.slice(-1).map((u) => `<p class="upd">${esc(u.text)}</p><p class="meta" style="margin-top:6px">${esc(u.date || '')}</p>`).join('')}</section>` : ''}
   ${lettersBlock(f)}
-  <section class="sec"><h2 class="h2">Something not right?</h2>
-  ${(f.issues || []).map((x) => `<p class="meta ok" style="margin:0 0 8px">We got your message from ${esc(x.at)}. We’ll look into it and get back to you by email.</p>`).join('')}
-  <p class="meta" style="margin:0 0 10px">If something on this page looks wrong or you’re stuck, tell us here. It goes straight to your file.</p>
-  <button class="btn ghost sm" type="button" id="iss">Tell us what’s wrong</button></section>
+  <section class="sec"><h2 class="h2">Need a hand?</h2>
+  ${(f.issues || []).map((x) => `<p class="meta ok" style="margin:0 0 8px">We got your note from ${esc(x.at)}. We’ll email you as soon as it’s sorted out.</p>`).join('')}
+  <p class="meta" style="margin:0 0 10px">A question, or something on this page that doesn’t look right? Send us a note and we’ll email you as soon as it’s sorted out.</p>
+  <button class="btn ghost sm" type="button" id="iss">Send us a note</button></section>
   <p class="small muted mt">Questions? Email <a href="mailto:customerservice@estimateconsultants.com">customerservice@estimateconsultants.com</a>.</p></div>`);
   $('iss').onclick = () => reportIssue(f, id);
+  carPhoto(f);
+  app.querySelectorAll('[data-shots]').forEach((b) => { b.onclick = () => photoTool(f, id, b.dataset.shots); });
   app.querySelectorAll('[data-letter]').forEach((b) => { b.onclick = () => openLetter(f, id, b.dataset.letter); });
   app.querySelectorAll('[data-saved]').forEach((b) => { b.onclick = () => getLetter(f, b, b.dataset.saved); });
   $('hm').onclick = (e) => { e.preventDefault(); history.replaceState(null, '', location.pathname); home(); };
@@ -377,6 +382,101 @@ function claim(id) {
   };
   if ($('acc')) $('acc').onclick = () => decide('accept');
   if ($('dec')) $('dec').onclick = () => decide('decline');
+}
+
+// ---------- claim header: a photo of the same model (not their car), with the vehicle name over it ----------
+function vehParts(v) { const w = String(v || '').split(/\s+/); return { top: w.slice(0, 3).join(' '), rest: w.slice(3).join(' ').replace(/^[-\s]+/, '') }; }
+function heroHtml(f) {
+  const v = vehParts(f.vehicle);
+  return `<div class="hero" id="hero"><div class="ph" id="ph"></div>
+    <svg class="arcs" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor"><path d="M40 210a160 160 0 0 1 320 0" stroke-width="1"/><path d="M80 210a120 120 0 0 1 240 0" stroke-width="1"/><path d="M120 210a80 80 0 0 1 160 0" stroke-width="1"/></g></svg>
+    <div class="hcap"><p class="meta">${esc(shortType(f.type))}, file ${esc(f.fileId)}</p><h1 class="plate">${esc(v.top)}</h1>${v.rest ? `<p class="meta trim">${esc(v.rest)}</p>` : ''}</div>
+    <a class="credit" id="phc" hidden target="_blank" rel="noopener"></a></div>`;
+}
+async function carPhoto(f) {
+  const v = vehParts(f.vehicle).top, key = 'ec_ph_' + v.toLowerCase(); if (!v) return;
+  let hit = null; try { hit = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) {}
+  if (!hit) {
+    try {
+      const q = encodeURIComponent(v.replace(/^\d{4}\s+/, '') + ' ' + (v.match(/^\d{4}/) || [''])[0]);
+      const j = await fetch('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=3&gsrsearch=' + q + '&prop=pageimages&piprop=thumbnail&pithumbsize=1000').then((r) => r.json());
+      const pages = Object.values((j.query || {}).pages || {}).sort((a, b) => a.index - b.index).filter((p) => p.thumbnail && p.thumbnail.width >= p.thumbnail.height);
+      if (pages[0]) hit = { src: pages[0].thumbnail.source, title: pages[0].title };
+      try { localStorage.setItem(key, JSON.stringify(hit || { none: 1 })); } catch (e) {}
+    } catch (e) { return; }
+  }
+  if (!hit || !hit.src) return;
+  const img = new Image(); img.onload = () => { const ph = $('ph'); if (!ph) return; ph.style.backgroundImage = 'url("' + hit.src + '")'; ph.classList.add('on'); $('hero').classList.add('hasph');
+    const c = $('phc'); if (c) { c.hidden = false; c.href = 'https://en.wikipedia.org/wiki/' + encodeURIComponent(hit.title.replace(/ /g, '_')); c.textContent = 'Photo of a similar vehicle: Wikipedia'; } };
+  img.src = hit.src;
+}
+// ---------- "Setting up your claim": the gauge fills as a progress meter ----------
+function setupProgress() {
+  const steps = [[0, 'Checking your details'], [10, 'Creating your claim file'], [30, 'Preparing your agreement'], [55, 'Setting up your payment'], [75, 'Getting your checklist ready'], [90, 'Almost done']];
+  app.innerHTML = `<div class="loadr setupg" id="sg" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Setting up your claim">
+    <svg width="200" height="130" viewBox="0 0 64 42" aria-hidden="true"><path d="M8 38a24 24 0 0 1 48 0" fill="none" stroke="#25302b" stroke-width="5" stroke-linecap="round"/>
+    <path id="sgA" d="M8 38a24 24 0 0 1 48 0" fill="none" stroke="#7fd69a" stroke-width="5" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/>
+    <g id="sgN" style="transform-origin:32px 38px;transform:rotate(-90deg)"><path d="M32 38 32 19" stroke="#eef2ef" stroke-width="2.6" stroke-linecap="round"/></g><circle cx="32" cy="38" r="3.6" fill="#eef2ef"/></svg>
+    <div class="pct"><b id="sgP">0</b><span>%</span></div><p id="sgT">${esc(steps[0][1])}</p></div>`;
+  let p = 0, fin = false, raf = 0, last = '', t0 = performance.now(), tf = 0, pf = 0, resolveDone = null;
+  const draw = (v) => { const a = $('sgA'), n = $('sgN'), b = $('sgP'), t = $('sgT'), g = $('sg'); if (!a) return;
+    a.setAttribute('stroke-dashoffset', String(100 - v)); n.style.transform = 'rotate(' + (-90 + 1.8 * v) + 'deg)'; b.textContent = Math.round(v); g.setAttribute('aria-valuenow', String(Math.round(v)));
+    const s = steps.filter((x) => v >= x[0]).pop()[1]; if (s !== last) { last = s; t.textContent = v >= 100 ? 'Done' : s; } };
+  const tick = (now) => {
+    if (!fin) p = 93 * (1 - Math.exp(-(now - t0) / 15000));                // eases toward 93% while the server works
+    else { const k = Math.min(1, (now - tf) / 650); p = pf + (100 - pf) * (1 - Math.pow(1 - k, 3)); if (k >= 1) { draw(100); setTimeout(resolveDone, 250); return; } }
+    draw(p); raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+  return { done: () => new Promise((res) => { fin = true; tf = performance.now(); pf = p; resolveDone = res; }), stop: () => cancelAnimationFrame(raf) };
+}
+// ---------- vehicle photos: one guided shot at a time ----------
+const SHOT_ICON = { corner: '<path d="M6 30h52M12 30l5-11h26l9 11M17 30a4 4 0 1 0 8 0M41 30a4 4 0 1 0 8 0"/><path d="M44 12l8-6M52 6v6h-6"/>', side: '<path d="M4 32h56M8 32l6-12h30l10 12M14 32a4 4 0 1 0 8 0M42 32a4 4 0 1 0 8 0"/>',
+  odo: '<circle cx="32" cy="24" r="16"/><path d="M32 24l9-7"/><path d="M24 34h16"/>', vin: '<rect x="10" y="12" width="44" height="24" rx="3"/><path d="M16 20h32M16 28h20"/>', seat: '<path d="M22 8h14l-2 22H24zM18 30h28v8H18z"/>', close: '<circle cx="28" cy="22" r="12"/><path d="M37 31l12 12"/>', tire: '<circle cx="32" cy="24" r="16"/><circle cx="32" cy="24" r="6"/>' };
+const SHOTS = {
+  fl: ['Front, driver side corner', 'corner', 'Stand back far enough to get the whole car in.'], fr: ['Front, passenger side corner', 'corner', 'Whole car in the frame.'],
+  rl: ['Rear, driver side corner', 'corner', 'Whole car in the frame.'], rr: ['Rear, passenger side corner', 'corner', 'Whole car in the frame.'],
+  sl: ['Driver side', 'side', 'Straight on, whole side.'], sr: ['Passenger side', 'side', 'Straight on, whole side.'],
+  odo: ['Odometer', 'odo', 'Car on, mileage showing.'], vin: ['VIN sticker', 'vin', 'On the driver door jamb.'],
+  front: ['Front seats and dash', 'seat', 'From the open driver door.'], rear: ['Back seats', 'seat', 'From an open rear door.'],
+  tires: ['Tire tread', 'tire', 'One front tire, close up.'], dmg: ['Damage close-up', 'close', 'Up close, in good light. Add as many as you need.'], fix: ['Repaired area', 'close', 'Up close, in good light. Add as many as you need.']
+};
+function isShotNeed(x) { return x.id === 'photos' || /^vehicle photos$/i.test(x.name || ''); }
+function shotsFor(f, x) { const base = ['fl', 'fr', 'rl', 'rr', 'sl', 'sr']; const hasOdo = (f.needs || []).some((n) => n.id === 'odo');
+  return base.concat(hasOdo ? [] : ['odo'], ['vin', 'front'], f.kind === 'tl' ? ['rear', 'tires', 'dmg'] : f.kind === 'dv' ? ['fix'] : ['rear']); }
+function shotDone(x, k) { const nm = SHOTS[k][0].toLowerCase(); return (x.files || []).some((y) => String(y.name || '').toLowerCase().indexOf(nm) === 0); }
+function photoTool(f, id, needId) {
+  const x = (f.needs || []).find((n) => n.id === needId); if (!x) return; const keys = shotsFor(f, x), local = {};
+  const m = document.createElement('div'); m.className = 'shotsheet'; document.body.appendChild(m); document.body.style.overflow = 'hidden';
+  const close = () => { m.remove(); document.body.style.overflow = ''; claim(id); };
+  const draw = () => {
+    const done = keys.filter((k) => shotDone(x, k) || local[k] === 'ok').length;
+    m.innerHTML = `<div class="shotbar"><button class="link" type="button" id="shx">Done</button><b>Vehicle photos</b><span class="muted">${done} of ${keys.length}</span></div>
+      <div class="shotprog"><i style="width:${Math.round(done / keys.length * 100)}%"></i></div>
+      <p class="meta shothint">Tap a photo to take it. Daylight and the whole car in frame work best.</p>
+      <div class="shots">${keys.map((k) => { const s = SHOTS[k], st = local[k] || (shotDone(x, k) ? 'ok' : '');
+        return `<label class="shot ${st}" for="sh_${k}"><span class="si">${st === 'ok' ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0d1a12" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg>' : st === 'up' ? '<span class="sp"></span>' : `<svg viewBox="0 0 64 44" width="56" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${SHOT_ICON[s[1]]}</svg>`}</span>
+          ${local['t_' + k] ? `<img src="${local['t_' + k]}" alt="">` : ''}<span class="sn">${esc(s[0])}</span><span class="sd">${st === 'warn' ? esc(local['w_' + k]) + ' Tap to retake.' : esc(s[2])}</span>
+          <input type="file" id="sh_${k}" data-k="${k}" accept="image/*" capture="environment" ${/dmg|fix/.test(k) ? 'multiple' : ''} hidden></label>`; }).join('')}</div>
+      <div class="shotfoot"><label class="btn ghost" for="shlib">Choose from your photos instead</label><input type="file" id="shlib" accept="image/*" multiple hidden></div>`;
+    $('shx').onclick = close;
+    m.querySelectorAll('input[data-k]').forEach((inp) => { inp.onchange = () => { const l = [...inp.files]; inp.value = ''; l.forEach((file, i) => sendShot(inp.dataset.k, file, i)); }; });
+    $('shlib').onchange = () => { const l = [...$('shlib').files]; $('shlib').value = ''; const open = keys.filter((k) => !(shotDone(x, k) || local[k] === 'ok' || local[k] === 'up')); l.forEach((file, i) => sendShot(open[i] || 'dmg', file, i)); };
+  };
+  const sendShot = async (k, file, n) => {
+    local[k] = 'up'; try { local['t_' + k] = URL.createObjectURL(file); } catch (e) {} draw();
+    try {
+      const url = URL.createObjectURL(file), img = await loadImg(url); const why = photoCheck(img);
+      const data = shrink(img), hash = await sha256(Uint8Array.from(atob(data.slice(0, 4000)), (c) => c.charCodeAt(0)).buffer);
+      const name = SHOTS[k][0] + (n ? ' ' + (n + 1) : '') + '.jpg';
+      const j = await call('p2_upload', { fileId: f.fileId, need: needId, name, mime: 'image/jpeg', data, hash: hash + k + n });
+      if (!j.ok && !j.dup) throw new Error(j.message || 'Couldn’t send it.');
+      if (j.files) { S.files = j.files; snap.save(); const nf = S.files.find((y) => y.fileId === f.fileId); const nx = nf && (nf.needs || []).find((y) => y.id === needId); if (nx) x.files = nx.files; }
+      if (why) { local[k] = 'warn'; local['w_' + k] = why; } else local[k] = 'ok';
+    } catch (e) { local[k] = 'warn'; local['w_' + k] = 'Didn’t send.'; }
+    draw();
+  };
+  draw();
 }
 
 // ---------- uploads: photo check, shrink, duplicate catch ----------
@@ -539,16 +639,16 @@ async function getLetter(f, b, lid) {
 // "Something not right?": the client's note goes on the file and flags it for Kevin until he marks it handled.
 function reportIssue(f, id) {
   const m = document.createElement('div'); m.className = 'sheet';
-  m.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true" aria-labelledby="isst"><h2 class="h2" id="isst">What’s wrong?</h2><p class="meta" style="margin:0 0 12px">A sentence or two is fine. We’ll reply by email.</p>
+  m.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true" aria-labelledby="isst"><h2 class="h2" id="isst">Send us a note</h2><p class="meta" style="margin:0 0 12px">A sentence or two is fine. We’ll email you as soon as it’s sorted out.</p>
     <label class="f" for="istx" style="position:absolute;left:-9999px">Your message</label><textarea class="in" id="istx" rows="5" maxlength="2000" style="height:auto;padding:14px 16px;line-height:1.5;resize:vertical"></textarea>
     <div class="stack mt-s"><button class="btn red" type="button" id="issgo">Send</button><button class="btn ghost" type="button" id="issno">Cancel</button></div></div>`;
   document.body.appendChild(m); $('istx').focus();
   $('issno').onclick = () => m.remove();
   $('issgo').onclick = async () => {
-    const text = $('istx').value.trim(); if (text.length < 3) { $('istx').focus(); return toast('Tell us a little about what’s wrong.'); }
+    const text = $('istx').value.trim(); if (text.length < 3) { $('istx').focus(); return toast('Add a sentence or two first.'); }
     const b = $('issgo'); busy(b, true);
     try { const r = await call('p2_issue', { fileId: f.fileId, text }); if (!r.ok) { busy(b, false); return toast(r.message || 'Couldn’t send your message.'); }
-      S.files = r.files || S.files; snap.save(); m.remove(); toast('Sent. We’ll get back to you by email.'); claim(id); }
+      S.files = r.files || S.files; snap.save(); m.remove(); toast('Sent. We’ll email you as soon as it’s sorted out.'); claim(id); }
     catch (e) { busy(b, false); toast('Couldn’t send your message. Check your connection and try again.'); }
   };
 }
