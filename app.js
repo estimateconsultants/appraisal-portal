@@ -440,10 +440,21 @@ const SHOTS = {
   vin: ['VIN', 'vind', 'The sticker in the driver door jamb, or the plate through the windshield.'], odo: ['Odometer with mileage', 'odo', 'Turn the car on so the mileage shows. No need to start the engine.'],
   eng: ['Engine bay', 'eng', 'Hood open, the whole engine bay.'], ia: ['Interior from the driver door', 'ia', 'All four doors open.'], ib: ['Interior from the passenger door', 'ib', 'Front seats and dash.'],
   ic: ['Interior from the left rear door', 'ic', 'Back seats.'], id: ['Interior from the right rear door', 'id', 'Back seats.'],
-  dmg: ['Damage or wear close-up', '', 'Scratches, dents, chips, stains, tears. Up close, in good light. Add as many as you need.']
+  dmg: ['Damage or wear close-up', '', 'Scratches, dents, chips, stains, tears. Up close, in good light. Add as many as you need.'],
+  mr: ['Right side', '', 'The whole bike from the right, on its stand. Stand back so both wheels are in the photo.'], ml: ['Left side', '', 'The whole bike from the left.'],
+  mf: ['Front', '', 'Straight on from the front, with the headlight and forks.'], mb: ['Rear', '', 'Straight on from the back, with the plate.'],
+  mvin: ['VIN', '', 'Stamped on the frame by the steering head (turn the bars to see it), or on the frame sticker.'], modo: ['Gauges with mileage', '', 'Key on so the mileage shows. No need to start it.'],
+  meng: ['Engine', '', 'The engine from the side with the most detail.'], mfork: ['Forks and front wheel', '', 'Close enough to see the fork tubes and the wheel.'],
+  mods: ['Added parts', '', 'Exhaust, seat, bags, audio, wheels, lights. One photo each, plus any receipts. Add as many as you need.']
 };
+// Motorcycles get their own photo list: from the make or model, or the switch in the photo sheet (remembered on this device).
+const BIKE_MAKES = /\b(harley|indian|ducati|triumph|ktm|aprilia|mv agusta|moto guzzi|royal enfield|zero|husqvarna|vespa|piaggio|victory|buell|can-am|ural|benelli|cfmoto|kymco|sym|bimota|norton)\b/i;
+const BIKE_MODELS = /\b(glide|softail|sportster|road king|gold ?wing|ninja|vulcan|shadow|rebel|cbr\d*[a-z]*|cb\d+[a-z]*|crf\d*[a-z]*|gsx[-\w]*|v-strom|hayabusa|boulevard|yzf[-\w]*|mt-\d+|xsr\d*|tenere|v star|r \d{3,4}|k 1600|s 1000|g 310|africa twin|grom|z\d{3}|versys|klr\d*|scout|chief|chieftain|tri glide|freewheeler|ryker)\b/i;
+function isBike(f) { let o = null; try { o = localStorage.getItem('ec_bike_' + f.fileId); } catch (e) {} if (o === '1') return true; if (o === '0') return false; const d = String(f.vehicle || ''); return BIKE_MAKES.test(d) || BIKE_MODELS.test(d); }
 function isShotNeed(x) { return x.id === 'photos' || /^vehicle photos$/i.test(x.name || ''); }
-function shotsFor(f, x) { const hasOdo = (f.needs || []).some((n) => n.id === 'odo'); return ['rf', 'lf', 'rr', 'lr', 'vin'].concat(hasOdo ? [] : ['odo'], ['eng', 'ia', 'ib', 'ic', 'id', 'dmg']); }
+function shotsFor(f, x) { const hasOdo = (f.needs || []).some((n) => n.id === 'odo');
+  if (isBike(f)) return ['mr', 'ml', 'mf', 'mb', 'mvin'].concat(hasOdo ? [] : ['modo'], ['meng', 'mfork', 'mods', 'dmg']);
+  return ['rf', 'lf', 'rr', 'lr', 'vin'].concat(hasOdo ? [] : ['odo'], ['eng', 'ia', 'ib', 'ic', 'id', 'dmg']); }
 function shotDone(x, k) { const nm = SHOTS[k][0].toLowerCase(); return (x.files || []).some((y) => String(y.name || '').toLowerCase().indexOf(nm) === 0); }
 function photoTool(f, id, needId) {
   const x = (f.needs || []).find((n) => n.id === needId); if (!x) return; const keys = shotsFor(f, x), local = {};
@@ -458,9 +469,11 @@ function photoTool(f, id, needId) {
         const pic = local['t_' + k] ? `<img src="${local['t_' + k]}" alt="">` : s[1] ? `<img class="ex" src="/guide/${s[1]}.webp" alt="" loading="lazy"><em>Example</em>` : `<span class="nopic"><svg viewBox="0 0 64 44" width="56" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">${SHOT_ICON.close}</svg></span>`;
         return `<label class="shot ${st}" for="sh_${k}"><span class="pic">${pic}${st === 'ok' ? '<span class="si"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#0d1a12" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></span>' : st === 'up' ? '<span class="si up"><span class="sp"></span></span>' : ''}</span>
           <span class="sn">${esc(s[0])}</span><span class="sd">${st === 'warn' ? esc(local['w_' + k]) + ' Tap to retake.' : esc(s[2])}</span>
-          <input type="file" id="sh_${k}" data-k="${k}" accept="image/*" capture="environment" ${k === 'dmg' ? 'multiple' : ''} hidden></label>`; }).join('')}</div>
-      <div class="shotfoot"><label class="btn ghost" for="shlib">Choose from your photos instead</label><input type="file" id="shlib" accept="image/*" multiple hidden></div>`;
+          <input type="file" id="sh_${k}" data-k="${k}" accept="image/*" capture="environment" ${k === 'dmg' || k === 'mods' ? 'multiple' : ''} hidden></label>`; }).join('')}</div>
+      <div class="shotfoot"><label class="btn ghost" for="shlib">Choose from your photos instead</label><input type="file" id="shlib" accept="image/*" multiple hidden>
+      <button class="link mt-s" type="button" id="shkind">${isBike(f) ? 'Not a motorcycle? Show the car photo list' : 'Is it a motorcycle? Show the motorcycle photo list'}</button></div>`;
     $('shx').onclick = close;
+    $('shkind').onclick = () => { try { localStorage.setItem('ec_bike_' + f.fileId, isBike(f) ? '0' : '1'); } catch (e) {} m.remove(); document.body.style.overflow = ''; photoTool(f, id, needId); };
     m.querySelectorAll('input[data-k]').forEach((inp) => { inp.onchange = () => { const l = [...inp.files]; inp.value = ''; l.forEach((file, i) => sendShot(inp.dataset.k, file, i)); }; });
     $('shlib').onchange = () => { const l = [...$('shlib').files]; $('shlib').value = ''; const open = keys.filter((k) => !(shotDone(x, k) || local[k] === 'ok' || local[k] === 'up')); l.forEach((file, i) => sendShot(open[i] || 'dmg', file, i)); };
   };
