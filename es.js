@@ -135,12 +135,23 @@
     'Tell us what’s wrong': 'Díganos qué pasa', 'What’s wrong?': '¿Qué pasa?', 'A sentence or two is fine. We’ll reply by email.': 'Basta con una o dos frases. Le responderemos por correo electrónico.',
     'Your message': 'Su mensaje', 'Send': 'Enviar', 'Cancel': 'Cancelar', 'Tell us a little about what’s wrong.': 'Cuéntenos un poco qué pasa.', 'Sent. We’ll get back to you by email.': 'Enviado. Le responderemos por correo electrónico.',
     'Couldn’t send your message.': 'No se pudo enviar su mensaje.', 'Couldn’t send your message. Check your connection and try again.': 'No se pudo enviar su mensaje. Revise su conexión e inténtelo de nuevo.',
-    'We already have your messages. We’ll get back to you soon.': 'Ya tenemos sus mensajes. Le responderemos pronto.'
+    'We already have your messages. We’ll get back to you soon.': 'Ya tenemos sus mensajes. Le responderemos pronto.',
+    'Letters and forms': 'Cartas y formularios', 'Fill these in with your details. Then print them, email them to yourself, or save them here.': 'Complételos con sus datos. Luego imprímalos, envíelos a su correo o guárdelos aquí. Las cartas están en inglés para la aseguradora.',
+    'Diminished value demand letter': 'Carta de reclamo de valor disminuido', 'To the at-fault driver’s insurer, asking them to pay your diminished value.': 'Para la aseguradora del conductor culpable, pidiéndole que pague su valor disminuido.',
+    'Follow-up letter': 'Carta de seguimiento', 'If the insurer hasn’t answered your demand.': 'Si la aseguradora no ha respondido a su reclamo.',
+    'Small claims prep sheet': 'Hoja de preparación para reclamos menores', 'What to gather and know before filing. Print it and fill in the blanks.': 'Qué reunir y saber antes de presentar la demanda. Imprímala y complete los espacios.',
+    'Fill in': 'Completar', 'Download': 'Descargar', 'Close': 'Cerrar', 'See the letter': 'Ver la carta', 'See the sheet': 'Ver la hoja', 'Print': 'Imprimir', 'Email it to me': 'Enviármela por correo', 'Save to my claim': 'Guardar en mi reclamo',
+    'Back to the details': 'Volver a los datos', 'You can change any of the wording below before you print or save.': 'Puede cambiar el texto antes de imprimir o guardar.', 'Saved to your claim.': 'Guardada en su reclamo.',
+    'Insurance company': 'Compañía de seguros', 'Adjuster’s name': 'Nombre del ajustador', 'Claim number': 'Número de reclamo', 'Their insured (the at-fault driver)': 'Su asegurado (el conductor culpable)', 'Date of the accident': 'Fecha del accidente',
+    'Diminished value from your appraisal': 'Valor disminuido según su avalúo', 'Days to respond': 'Días para responder', 'Your name': 'Su nombre', 'Your mailing address': 'Su dirección postal', 'Your phone': 'Su teléfono', 'Your email': 'Su correo electrónico',
+    'Date you sent your demand': 'Fecha en que envió su reclamo', 'Amount you asked for': 'Monto que pidió', 'The at-fault driver (who you’d file against)': 'El conductor culpable (a quien demandaría)', 'Their insurance company': 'Su compañía de seguros', 'The insurer’s last offer': 'La última oferta de la aseguradora',
+    'Couldn’t save it.': 'No se pudo guardar.', 'Couldn’t save it. Check your connection and try again.': 'No se pudo guardar. Revise su conexión e inténtelo de nuevo.', 'Couldn’t open it.': 'No se pudo abrir.', 'Couldn’t open it. Check your connection and try again.': 'No se pudo abrir. Revise su conexión e inténtelo de nuevo.'
   };
   // Pieces inside longer text (sentences joined together, or with names and numbers)
   const R = [
     [/^(\d+) of (\d+)$/, '$1 de $2'], [/^(\d+) to go$/, (m, n) => (n === '1' ? 'falta 1' : 'faltan ' + n)], [/^(\d+) of (\d+) done$/, '$1 de $2 listos'],
     [/^We got your message from (.+)\. We’ll look into it and get back to you by email\.$/, (m, d) => 'Recibimos su mensaje del ' + d + '. Lo revisaremos y le responderemos por correo electrónico.'],
+    [/^Saved (.+)$/, (m, d) => 'Guardada el ' + d], [/^Sent to (.+)\. It’s saved on your claim too\.$/, (m, e) => 'Enviada a ' + e + '. También quedó guardada en su reclamo.'],
     [/^Sending (\d+) of (\d+)…$/, 'Enviando $1 de $2…'], [/^Received: /, 'Recibido: '], [/^Entered (.+)\.$/, 'Registrada el $1.'],
     [/^(.+), file (EC-[\w-]+)$/, (m, a, b) => tr(a) + ', expediente ' + b],
     [/In (.+?), you generally have (\d+) years from the accident to file suit if the claim isn’t resolved\. The insurer may close the claim sooner, so it’s best to start early\./, (m, s, n) => 'En ' + st(s) + ', por lo general tiene ' + n + ' años desde el accidente para presentar una demanda si el reclamo no se resuelve. La aseguradora puede cerrar el reclamo antes, así que es mejor empezar pronto.'],
