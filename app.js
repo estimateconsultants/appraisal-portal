@@ -117,21 +117,19 @@ function profile() {
 // ---------- claim setup ----------
 function startSetup(type) {
   S.setup = { type: type || '', i: 0, a: {}, zip: '', vr: Q.get('vr') || '', vehicle: { vin: Q.get('vin') || '', mileage: Q.get('miles') || '', desc: Q.get('vehicle') || '' }, dir: '' };
-  if (type) S.setup.i = 1; renderSetup();
+  if (type) S.setup.i = 1; if (S.setup.vehicle.vin) decodeVin(S.setup.vehicle); renderSetup();
 }
 function questions() {
   const s = S.setup, st = zipState(s.zip), dv = !!DVT[s.type];
   const fault = [['The other driver', 'other']].concat(st && st.um !== 'none' ? [['The other driver, and they had no insurance', 'unins']] : []).concat(st && st.um !== 'none' && UNDER_OK[st.code] ? [['The other driver, without enough insurance', 'under']] : []).concat([['Me', 'me'], ['Not decided yet', 'open']]);
-  const qs = [{ id: 'type' }, { id: 'zip', title: 'What ZIP code is the car kept in?', sub: 'Your state’s rules decide what’s available.' }];
+  const qs = [{ id: 'type' }, { id: 'zip', title: 'What ZIP code is the car kept in?', sub: 'Your state’s rules decide what’s available.' }, { id: 'vehicle' }];
   if (dv) qs.push({ id: 'fault', title: 'Who was at fault?', sub: 'Diminished value is claimed from the at-fault driver’s insurer' + (st && st.um !== 'none' ? ', or your own uninsured motorist coverage in ' + st.n + '.' : '.'), opts: fault },
     { id: 'date', title: 'When was the accident?', sub: st ? st.n + ' allows ' + st.dl + ' years to claim.' : '' },
-    { id: 'age', title: 'Is the car 10 model years old or newer?', opts: [['Yes', 'y'], ['No, it’s older', 'n']] },
-    { id: 'miles', title: 'Under 100,000 miles?', opts: [['Yes', 'y'], ['No', 'n']] },
     { id: 'prior', title: 'Any earlier accident?', sub: 'Before this one. We’ll verify the vehicle’s accident history.', opts: [['No', 'n'], ['Yes', 'y'], ['Not sure', 'u']] },
     { id: 'repair', title: 'Has it been repaired?', sub: 'We can start either way.', opts: [['Yes, repairs are done', 'done'], ['Being repaired now', 'now'], ['Not yet', 'not']] });
   if (s.type === 'dv' || s.type === 'dvself') qs.push({ id: 'service', title: 'How do you want to handle the insurer?', sub: 'Full service: the $199 isn’t charged if the insurer’s offer doesn’t reach $498.',
     opts: [['We handle it: $299 now, $199 when the offer comes in', 'full'], ['You handle it: $299, with our appraisal and a demand letter', 'self']] });
-  qs.push({ id: 'vehicle' }, { id: 'summary' });
+  qs.push({ id: 'summary' });
   return qs;
 }
 const STOP = {
@@ -199,6 +197,7 @@ function renderSetup() {
     app.querySelectorAll('.opt').forEach((b) => { b.onclick = () => answer(q.id, b.dataset.v, b.firstChild.textContent); });
   } else if (q.id === 'vehicle') {
     const v = s.vehicle;
+    if (v.year && v.mileage && s.dir !== 'rev' && !s.vehShown) { s.vehShown = 1; const why = vehicleStop(); if (why) return stopScreen(why); s.i++; return renderSetup(); }
     wrap(`<p class="k">Your vehicle</p><h1 class="mid">The car</h1>
     <form id="f" class="mt stack" novalidate>
     <div><label class="f" for="vin">VIN <span class="muted">(17 characters, on the registration or driver’s door)</span></label><input class="in" id="vin" maxlength="17" autocapitalize="characters" value="${esc(v.vin)}" autofocus style="text-transform:uppercase;letter-spacing:.06em"></div>
@@ -219,13 +218,12 @@ function renderSetup() {
     if (v.vin && !v.year) decode();
     $('f').onsubmit = (e) => { e.preventDefault(); v.vin = $('vin').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); v.mileage = $('mi').value.replace(/[^\d]/g, '');
       if (v.vin.length !== 17) return toast('Enter the 17-character VIN.'); if (!v.year) return toast('We need a VIN we can read.'); if (!v.mileage) return toast('Enter the mileage.');
-      if (DVT[s.type] && parseInt(v.year, 10) < new Date().getFullYear() - 10) return stopScreen('age');
-      if (DVT[s.type] && Number(v.mileage) >= 100000) return stopScreen('miles');
-      s.i++; renderSetup(); };
+      const why = vehicleStop(); if (why) return stopScreen(why);
+      s.i++; s.dir = ''; renderSetup(); };
   } else if (q.id === 'summary') {
     const st = zipState(s.zip), L = s.labels || {}, a = S.account || {};
     const rows = [['Name', a.name], ['Email', a.email], ['Phone', a.phone], ['Vehicle', s.vehicle.desc], ['VIN', s.vehicle.vin], ['Mileage', Number(s.vehicle.mileage).toLocaleString('en-US')]]
-      .concat([['service', 'Service'], ['zip', 'Car kept in'], ['fault', 'At fault'], ['date', 'Accident date'], ['age', '10 years or newer'], ['miles', 'Under 100,000 miles'], ['prior', 'Earlier accident'], ['repair', 'Repairs']].filter((x) => L[x[0]]).map((x) => [x[1], L[x[0]]]));
+      .concat([['service', 'Service'], ['zip', 'Car kept in'], ['fault', 'At fault'], ['date', 'Accident date'], ['prior', 'Earlier accident'], ['repair', 'Repairs']].filter((x) => L[x[0]]).map((x) => [x[1], L[x[0]]]));
     const name = s.type === 'ncdv' ? 'NC diminished value appraisal' : s.type === 'dv' ? 'Diminished value · full service' : s.type === 'dvself' ? 'Diminished value · self-service' : (L.type || '') + ' appraisal';
     wrap(`<p class="k">Check your details</p><h1 class="mid">${esc(name)}</h1><p class="ok small" style="margin:8px 0 0">Your claim qualifies.</p>
     <dl class="sum">${rows.map((r) => `<div><dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>
@@ -242,6 +240,14 @@ function renderSetup() {
     };
   }
   $('bk').onclick = () => { if (s.i <= 0 || (s.i === 1 && !S.files.length && false)) return home(); s.i--; s.dir = 'rev'; if (s.i === 0) s.type = ''; renderSetup(); };
+}
+function vehicleStop() { const s = S.setup, v = s.vehicle; if (!DVT[s.type]) return ''; if (parseInt(v.year, 10) < new Date().getFullYear() - 10) return 'age'; if (Number(v.mileage) >= 100000) return 'miles'; return ''; }
+// Reads the VIN as soon as we have one (from a link or typed), so the vehicle screen can be skipped or filled in.
+async function decodeVin(v) {
+  const vin = String(v.vin || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (vin.length !== 17) return false;
+  try { const j = await fetch('https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvalues/' + vin + '?format=json').then((r) => r.json()), x = (j.Results || [])[0] || {};
+    if (x.ModelYear && x.Make) { Object.assign(v, { vin, year: x.ModelYear, make: titleCase(x.Make), model: x.Model || '', trim: x.Trim || '' }); v.desc = [v.year, v.make, v.model, v.trim].filter(Boolean).join(' '); return true; } } catch (e) {}
+  return false;
 }
 function titleCase(t) { return String(t || '').toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase()).replace(/\bBmw\b/, 'BMW').replace(/\bGmc\b/, 'GMC'); }
 
