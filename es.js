@@ -67,7 +67,7 @@
     'We need from you': 'Necesitamos de usted', 'Your documents': 'Sus documentos', 'Upload': 'Subir', 'Add more': 'Agregar más', 'Checked': 'Revisado',
     'Anything else': 'Algo más', 'Other photos or documents you want us to have': 'Otras fotos o documentos que quiera enviarnos', 'Other documents': 'Otros documentos',
     'Photos or PDFs. We’ll check each one and mark it when it’s good.': 'Fotos o PDF. Revisaremos cada uno y lo marcaremos cuando esté bien.',
-    'The insurer’s offer': 'La oferta de la aseguradora', 'Offer amount': 'Monto de la oferta', 'Save': 'Guardar', 'Change it': 'Cambiarla', 'Progress': 'Avance', 'Latest update': 'Última novedad',
+    'The insurer’s offer': 'La oferta de la aseguradora', 'Before sales tax, title and tag fees': 'Antes del impuesto sobre la venta y los cargos de título y placas', 'Offer amount': 'Monto de la oferta', 'Save': 'Guardar', 'Change it': 'Cambiarla', 'Progress': 'Avance', 'Latest update': 'Última novedad',
     'Questions? Email': '¿Preguntas? Escríbanos a', 'Your claims ': 'Sus reclamos', 'Sign out': 'Cerrar sesión', 'Your account': 'Su cuenta',
     'Choose another photo': 'Elegir otra foto', 'Send it anyway': 'Enviarla de todos modos', 'This photo looks blurry.': 'Esta foto se ve borrosa.', 'This photo looks too dark to read.': 'Esta foto está muy oscura.',
     'This photo is very small, so details may not show.': 'Esta foto es muy pequeña y puede que no se vean los detalles.',
