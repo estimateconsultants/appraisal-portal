@@ -56,7 +56,7 @@ function signIn(msg) {
   view(`<div class="top-gap" style="padding-top:56px"><h1 class="h">Sign in to your claim</h1>
   <p class="lead">We’ll email you a 6-digit code. There’s no password to remember.</p>
   <form id="f" class="mt" novalidate><label class="f" for="em">Email</label>
-  <input class="in" id="em" type="email" autocomplete="email" inputmode="email" autofocus value="${esc(S.email || Q.get('email') || '')}">
+  <input class="in" id="em" type="email" autocomplete="email" inputmode="email" autofocus value="${esc(S.email || (S.inv && S.inv.email) || Q.get('email') || '')}">
   <p class="err" id="er">${esc(msg || '')}</p>
   <button class="btn red mt-s" id="go" type="submit">Send my code ${ARROW}</button></form>
   <p class="small muted mt">You don’t need the portal to work with us. You can also call or text <a href="tel:9103336001">910-333-6001</a>, or email <a href="mailto:customerservice@estimateconsultants.com">customerservice@estimateconsultants.com</a>.</p></div>`);
@@ -107,6 +107,8 @@ function codeStep() {
 function afterSignIn() {
   const a = S.account || {}; $('meBtn').hidden = false; $('meBtn').textContent = (a.name || a.email || '?').split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
   if (!a.name) return profile();
+  // Invited from the app: start the setup with what we already have, once.
+  if (S.inv && !S.invUsed) { S.invUsed = 1; history.replaceState(null, '', location.pathname); return startSetup(S.inv.type || '', S.inv); }
   if (Q.get('vin') || Q.get('vehicle') || Q.get('start')) { const t = Q.get('start') || (Q.get('vr') ? 'tl' : ''); history.replaceState(null, '', location.pathname); return startSetup(t || ''); }
   if (!S.files.length) return startSetup('');
   home();
@@ -114,8 +116,8 @@ function afterSignIn() {
 function profile() {
   view(`<div class="swipe top-gap"><h1 class="h">Your name and phone</h1><p class="lead">These go on your claim file.</p>
   <form id="f" class="mt stack" novalidate>
-  <div><label class="f" for="nm">Full name</label><input class="in" id="nm" autocomplete="name" autofocus></div>
-  <div><label class="f" for="ph">Phone</label><input class="in" id="ph" type="tel" autocomplete="tel" inputmode="tel"></div>
+  <div><label class="f" for="nm">Full name</label><input class="in" id="nm" autocomplete="name" autofocus value="${esc((S.inv && S.inv.name) || '')}"></div>
+  <div><label class="f" for="ph">Phone</label><input class="in" id="ph" type="tel" autocomplete="tel" inputmode="tel" value="${esc((S.inv && S.inv.phone) || '')}"></div>
   <p class="err" id="er"></p><button class="btn red" id="go" type="submit">Continue ${ARROW}</button></form></div>`);
   $('f').onsubmit = async (e) => {
     e.preventDefault(); const b = $('go'); busy(b, true); $('er').textContent = '';
@@ -125,8 +127,10 @@ function profile() {
 }
 
 // ---------- claim setup ----------
-function startSetup(type) {
-  S.setup = { type: type || '', i: 0, a: {}, zip: '', vr: Q.get('vr') || '', vehicle: { vin: Q.get('vin') || '', mileage: Q.get('miles') || '', desc: Q.get('vehicle') || '' }, dir: '' };
+function startSetup(type, pre) {
+  pre = pre || {};
+  S.setup = { type: type || '', i: 0, a: {}, zip: zipState(pre.zip) ? pre.zip : '', preZip: !!zipState(pre.zip), acc: STATES[pre.acc] ? pre.acc : undefined, preAcc: !!STATES[pre.acc], inv: pre.id || '',
+    vr: Q.get('vr') || '', vehicle: { vin: pre.vin || Q.get('vin') || '', mileage: String(pre.miles || Q.get('miles') || '').replace(/[^\d]/g, ''), desc: pre.vehicle || Q.get('vehicle') || '' }, dir: '' };
   if (type) S.setup.i = 1; if (S.setup.vehicle.vin) decodeVin(S.setup.vehicle); renderSetup();
 }
 function questions() {
@@ -136,7 +140,7 @@ function questions() {
   if (dv) qs.push({ id: 'acc', title: 'Which state was the accident in?', sub: 'That state’s law sets the deadline and the rules for a claim against the other driver.' });
   qs.push({ id: 'vehicle' });
   if (dv) qs.push({ id: 'fault', title: 'Who was at fault?', sub: 'Diminished value is claimed from the at-fault driver’s insurer' + (st && st.um !== 'none' ? ', or your own ' + (UNDER_OK[st.code] ? 'uninsured or underinsured' : 'uninsured') + ' motorist coverage in ' + st.n + '.' : '.'), opts: fault },
-    { id: 'date', title: 'When was the accident?', sub: acc ? acc.n + ' allows ' + acc.dl + ' years to claim.' : '' },
+    { id: 'date', title: 'When was the accident?', sub: acc ? 'In ' + acc.n + ', you generally have ' + acc.dl + ' years from the accident to file suit if the claim isn’t resolved. The insurer may close the claim sooner, so it’s best to start early.' : '' },
     { id: 'prior', title: 'Any earlier accident?', sub: 'Before this one. We’ll verify the vehicle’s accident history.', opts: [['No', 'n'], ['Yes', 'y'], ['Not sure', 'u']] },
     { id: 'lease', title: 'Is the car leased?', sub: '', opts: [['No', 'n'], ['Yes, it’s leased', 'y']] },
     { id: 'repair', title: 'Has it been repaired?', sub: 'We can start either way.', opts: [['Yes, repairs are done', 'done'], ['Being repaired now', 'now'], ['Not yet', 'not']] });
@@ -152,7 +156,7 @@ const STOP = {
   partly: (st) => ['Partly at fault', st.n + ' doesn’t allow a claim against the other driver when you were even partly at fault for the accident.', false],
   me: () => ['You were at fault', 'Diminished value is paid by the at-fault driver’s insurer, so there’s no claim when you were at fault.', false],
   open: () => ['Fault isn’t decided yet', 'Diminished value is claimed once the other driver is found at fault. Come back as soon as their insurer accepts fault.', false],
-  late: (st) => ['Past the deadline', st.n + ' allows ' + st.dl + ' years from the accident for a property damage claim, and that time has passed.', false],
+  late: (st) => ['Past the deadline', 'In ' + st.n + ', the general deadline to file suit for property damage is ' + st.dl + ' years from the accident, and that time has passed.', false],
   age: () => ['The car is over 10 years old', 'Our diminished value appraisals are for vehicles 10 model years old or newer.', false],
   miles: () => ['Over 100,000 miles', 'Our diminished value appraisals are for vehicles under 100,000 miles.', false],
   prior: () => ['An earlier accident', 'Our diminished value appraisals are for vehicles with no accident before this one. We verify the accident history on every claim.', false]
@@ -205,6 +209,10 @@ function renderSetup() {
     <p class="mt" style="margin-bottom:0"><button class="link" type="button" id="ns">Not sure which one? Start with diminished value</button></p>`);
     app.querySelectorAll('[data-t]').forEach((b) => { b.onclick = () => { s.type = b.dataset.t; s.labels = { type: b.querySelector('.nm').textContent }; s.i = 1; s.dir = ''; renderSetup(); }; });
     $('ns').onclick = () => { s.type = 'dv'; s.labels = { type: 'Diminished value' }; s.i = 1; renderSetup(); };
+  } else if (q.id === 'zip' && s.preZip && !s.zipShown && s.dir !== 'rev') {
+    s.zipShown = 1; const st0 = zipState(s.zip); return answer('zip', s.zip, s.zip + ', ' + st0.n);
+  } else if (q.id === 'acc' && s.preAcc && !s.accShown && s.dir !== 'rev') {
+    s.accShown = 1; return answer('acc', s.acc, STATES[s.acc].n);
   } else if (q.id === 'zip') {
     wrap(`<h1 class="h">${esc(q.title)}</h1><p class="lead">${esc(q.sub)}</p>
     <form id="f" class="mt" novalidate><label class="f" for="z">ZIP code</label><input class="in zip" id="z" inputmode="numeric" maxlength="5" autocomplete="postal-code" value="${esc(s.zip)}" autofocus>
@@ -267,7 +275,7 @@ function renderSetup() {
     $('ok').onclick = async () => {
       const b = $('ok'); busy(b, true); const keep = app.innerHTML; loading('Setting up your claim');
       try {
-        const j = await call('p2_setup', { setup: { type: s.type, zip: s.zip, answers: s.a, vehicle: s.vehicle, vr: s.vr || '', accState: DVT[s.type] ? accState().code : '' } });
+        const j = await call('p2_setup', { setup: { type: s.type, zip: s.zip, answers: s.a, vehicle: s.vehicle, vr: s.vr || '', accState: DVT[s.type] ? accState().code : '', inv: s.inv || '' } });
         if (!j.ok) { if (j.reason === 'qualify') return stopScreen(j.why); renderSetup(); toast(j.message || 'Couldn’t save your claim. Try again.'); return; }
         S.files = j.files || S.files; S.setup = null; snap.save(); toast(j.existing ? 'This vehicle already has a file. Here it is.' : 'Your claim is set up.'); claim(j.fileId);
       } catch (e) { renderSetup(); toast('Couldn’t save your claim. Check your connection and try again.'); }
@@ -322,6 +330,14 @@ $('meBtn').onclick = () => {
 
 // ---------- start ----------
 (async function boot() {
+  const invId = Q.get('inv');
+  if (invId && /^[a-f0-9]{32}$/.test(invId)) {
+    loading('Opening your claim');
+    try { const j = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'p2_invite', inv: invId }) }).then((x) => x.json());
+      if (j.ok) { S.inv = Object.assign({ id: invId }, j.invite); S.email = S.inv.email; snap.load(); if (S.account && S.account.email && S.account.email !== S.inv.email) { store.del('ec_tok'); store.del('ec_snap'); S.token = null; S.account = null; S.files = []; } }
+      else toast(j.message || 'This link has expired.', 7000);
+    } catch (e) {}
+  }
   if (!S.token) return signIn();
   const had = snap.load();
   if (had) afterSignIn(); else loading('Opening your claim');
