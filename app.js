@@ -44,6 +44,8 @@ function busy(btn, on) { if (!btn) return; if (on) { btn.dataset.t = btn.innerHT
 function toast(t, ms) { const el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { el.hidden = true; }, ms || 4000); }
 function prog(p) { const i = document.querySelector('#prog i'); if (i) i.style.width = (p || 0) + '%'; }
 function view(html, wide, p) { app.className = wide ? 'wide' : ''; prog(p); app.innerHTML = html; window.scrollTo(0, 0); const f = app.querySelector('[autofocus]'); if (f) setTimeout(() => f.focus(), 60); }
+// State of the accident (DV claims ask for it; otherwise the insured state).
+function accState() { const s = S.setup || {}, c = s.acc; return c && STATES[c] ? Object.assign({ code: c }, STATES[c]) : zipState(s.zip); }
 function zipState(z) { z = String(z || ''); if (!/^\d{5}$/.test(z)) return null; const n = parseInt(z.slice(0, 3), 10), h = ZIPR.find((r) => n >= r[0] && n <= r[1]); return h && STATES[h[2]] ? Object.assign({ code: h[2] }, STATES[h[2]]) : null; }
 
 // ---------- sign in ----------
@@ -126,11 +128,13 @@ function startSetup(type) {
   if (type) S.setup.i = 1; if (S.setup.vehicle.vin) decodeVin(S.setup.vehicle); renderSetup();
 }
 function questions() {
-  const s = S.setup, st = zipState(s.zip), dv = !!DVT[s.type];
+  const s = S.setup, st = zipState(s.zip), dv = !!DVT[s.type], acc = accState();
   const fault = [['The other driver', 'other']].concat(st && st.um !== 'none' ? [['The other driver, and they had no insurance', 'unins']] : []).concat(st && st.um !== 'none' && UNDER_OK[st.code] ? [['The other driver, without enough insurance', 'under']] : []).concat([['Me', 'me'], ['Not decided yet', 'open']]);
-  const qs = [{ id: 'type' }, { id: 'zip', title: 'What’s your ZIP code?', sub: 'Your state’s rules decide what’s available.' }, { id: 'vehicle' }];
+  const qs = [{ id: 'type' }, { id: 'zip', title: 'What ZIP code is the car insured at?', sub: 'Your policy’s state decides what your own coverage includes.' }];
+  if (dv) qs.push({ id: 'acc', title: 'Which state was the accident in?', sub: 'That state’s law sets the deadline and the rules for a claim against the other driver.' });
+  qs.push({ id: 'vehicle' });
   if (dv) qs.push({ id: 'fault', title: 'Who was at fault?', sub: 'Diminished value is claimed from the at-fault driver’s insurer' + (st && st.um !== 'none' ? ', or your own ' + (UNDER_OK[st.code] ? 'uninsured or underinsured' : 'uninsured') + ' motorist coverage in ' + st.n + '.' : '.'), opts: fault },
-    { id: 'date', title: 'When was the accident?', sub: st ? st.n + ' allows ' + st.dl + ' years to claim.' : '' },
+    { id: 'date', title: 'When was the accident?', sub: acc ? acc.n + ' allows ' + acc.dl + ' years to claim.' : '' },
     { id: 'prior', title: 'Any earlier accident?', sub: 'Before this one. We’ll verify the vehicle’s accident history.', opts: [['No', 'n'], ['Yes', 'y'], ['Not sure', 'u']] },
     { id: 'repair', title: 'Has it been repaired?', sub: 'We can start either way.', opts: [['Yes, repairs are done', 'done'], ['Being repaired now', 'now'], ['Not yet', 'not']] });
   if (s.type === 'dv' || s.type === 'dvself') qs.push({ id: 'service', title: 'How do you want to handle the insurer?', sub: 'Full service: the $199 isn’t charged if the insurer’s offer doesn’t reach $498.',
@@ -141,7 +145,7 @@ function questions() {
 const STOP = {
   noCert: (st) => [st.n + ': certified appraisals unavailable', 'We can’t provide certified appraisals in ' + st.n + '.', true],
   noDV: (st) => ['Diminished value unavailable in ' + st.n, 'We don’t offer diminished value claims in ' + st.n + '.', true],
-  ncOnly: () => ['North Carolina only', 'This appraisal option is for North Carolina residents. Choose “Diminished value” instead.', false],
+  ncOnly: () => ['North Carolina only', 'This appraisal option is for accidents in North Carolina. Choose “Diminished value” instead.', false],
   me: () => ['You were at fault', 'Diminished value is paid by the at-fault driver’s insurer, so there’s no claim when you were at fault.', false],
   open: () => ['Fault isn’t decided yet', 'Diminished value is claimed once the other driver is found at fault. Come back as soon as their insurer accepts fault.', false],
   late: (st) => ['Past the deadline', st.n + ' allows ' + st.dl + ' years from the accident for a property damage claim, and that time has passed.', false],
@@ -150,7 +154,7 @@ const STOP = {
   prior: () => ['An earlier accident', 'Our diminished value appraisals are for vehicles with no accident before this one. We verify the accident history on every claim.', false]
 };
 function stopScreen(code) {
-  const st = zipState(S.setup.zip) || { n: '' }, x = (STOP[code] || (() => ['Not available', 'This claim doesn’t qualify. Call us and we’ll talk it through.', false]))(st);
+  const st = (code === 'late' || (code === 'noDV' && accState() && accState().noDV) ? accState() : zipState(S.setup.zip)) || { n: '' }, x = (STOP[code] || (() => ['Not available', 'This claim doesn’t qualify. Call us and we’ll talk it through.', false]))(st);
   view(`<div class="swipe top-gap"><h1 class="h">${esc(x[0])}</h1><p class="lead">${esc(x[1])}${x[2] ? ' Our MarketTrue Valuation Reports are still available there: an instant, uncertified report you can use with the insurer.' : ''}</p>
   <div class="stack mt">${x[2] ? `<a class="btn red" href="https://www.estimateconsultants.com/total-loss-valuation-report.html">Get a MarketTrue Valuation Report ${ARROW}</a>` : ''}
   <a class="btn ${x[2] ? 'ghost' : 'red'}" href="tel:9103336001">Call 910-333-6001</a>
@@ -159,9 +163,10 @@ function stopScreen(code) {
 }
 function stopFor(id, v) {
   const s = S.setup, st = zipState(s.zip);
-  if (id === 'zip') { if (st.noCert) return 'noCert'; if (DVT[s.type] && st.noDV) return 'noDV'; if (s.type === 'ncdv' && st.code !== 'NC') return 'ncOnly'; }
+  if (id === 'zip') { if (st.noCert) return 'noCert'; if (DVT[s.type] && st.noDV) return 'noDV'; }
+  if (id === 'acc') { const a = accState(); if (a.noDV) return 'noDV'; if (s.type === 'ncdv' && a.code !== 'NC') return 'ncOnly'; }
   if (id === 'fault' && (v === 'me' || v === 'open')) return v;
-  if (id === 'date') { const y = (Date.now() - Date.parse(v + 'T12:00:00')) / 31557600000; if (y > st.dl) return 'late'; }
+  if (id === 'date') { const y = (Date.now() - Date.parse(v + 'T12:00:00')) / 31557600000; if (y > accState().dl) return 'late'; }
   if (id === 'age' && v === 'n') return 'age';
   if (id === 'miles' && v === 'n') return 'miles';
   if (id === 'prior' && v === 'y') return 'prior';
@@ -193,7 +198,13 @@ function renderSetup() {
     <p class="hint" id="zp"></p><button class="btn red mt" type="submit">Continue ${ARROW}</button></form>`);
     const show = () => { const st = zipState($('z').value); $('zp').textContent = st ? st.n : 'Enter the 5-digit ZIP code'; $('zp').className = 'hint' + (st ? ' ok' : ''); };
     $('z').oninput = () => { $('z').value = $('z').value.replace(/\D/g, '').slice(0, 5); show(); }; show();
-    $('f').onsubmit = (e) => { e.preventDefault(); const st = zipState($('z').value); if (!st) return toast('Enter a valid 5-digit ZIP code.'); s.zip = $('z').value; answer('zip', s.zip, s.zip + ', ' + st.n); };
+    $('f').onsubmit = (e) => { e.preventDefault(); const st = zipState($('z').value); if (!st) return toast('Enter a valid 5-digit ZIP code.'); if (s.zip !== $('z').value) delete s.acc; s.zip = $('z').value; answer('zip', s.zip, s.zip + ', ' + st.n); };
+  } else if (q.id === 'acc') {
+    const cur = s.acc || (zipState(s.zip) || {}).code || '';
+    wrap(`<h1 class="h">${esc(q.title)}</h1><p class="lead">${esc(q.sub)}</p>
+    <form id="f" class="mt" novalidate><label class="f" for="as">State</label><select class="in" id="as" autofocus>${Object.keys(STATES).sort((a, b) => STATES[a].n.localeCompare(STATES[b].n)).map((c) => `<option value="${c}"${c === cur ? ' selected' : ''}>${esc(STATES[c].n)}</option>`).join('')}</select>
+    <button class="btn red mt" type="submit">Continue ${ARROW}</button></form>`);
+    $('f').onsubmit = (e) => { e.preventDefault(); s.acc = $('as').value; answer('acc', s.acc, STATES[s.acc].n); };
   } else if (q.id === 'date') {
     const today = new Date().toISOString().slice(0, 10);
     wrap(`<h1 class="h">${esc(q.title)}</h1><p class="lead">${esc(q.sub)}</p>
@@ -232,17 +243,18 @@ function renderSetup() {
   } else if (q.id === 'summary') {
     const st = zipState(s.zip), L = s.labels || {}, a = S.account || {};
     const rows = [['Name', a.name], ['Email', a.email], ['Phone', fmtPhone(a.phone)], ['Vehicle', s.vehicle.desc], ['VIN', s.vehicle.vin], ['Mileage', Number(s.vehicle.mileage).toLocaleString('en-US')]]
-      .concat([['service', 'Service'], ['zip', 'ZIP code'], ['fault', 'At fault'], ['date', 'Accident date'], ['prior', 'Earlier accident'], ['repair', 'Repairs']].filter((x) => L[x[0]]).map((x) => [x[1], L[x[0]]])).filter((r) => r[1]);
+      .concat([['service', 'Service'], ['zip', 'Insured at'], ['acc', 'Accident in'], ['fault', 'At fault'], ['date', 'Accident date'], ['prior', 'Earlier accident'], ['repair', 'Repairs']].filter((x) => L[x[0]]).map((x) => [x[1], L[x[0]]])).filter((r) => r[1]);
     const name = s.type === 'ncdv' ? 'North Carolina diminished value appraisal' : s.type === 'dv' ? 'Diminished value, full service' : s.type === 'dvself' ? 'Diminished value, self-service' : (L.type || '') + ' appraisal';
     wrap(`<h1 class="h">Check your details</h1><p class="lead"><span class="ok">Your claim qualifies</span> for a ${esc(name.charAt(0).toLowerCase() + name.slice(1)).replace(/^north carolina/, 'North Carolina')}.</p>
     <dl class="list sum mt">${rows.map((r) => `<div><dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>
-    ${st && st.ncAppraisal && DVT[s.type] ? '<p class="note mt-s">North Carolina: if the insurer’s offer comes in more than $2,000 under our value (or 25% of the car’s value, if that’s less), state law lets either side demand an appraisal. We’ll show you that option when the offer arrives.</p>' : ''}
+    ${DVT[s.type] && st && st.code === 'MD' && /unins|under/.test(s.a.fault || '') ? '<p class="note mt-s">Maryland: the state insurance department says uninsured and underinsured motorist coverage must pay diminished value, and insurers can’t exclude it (Bulletin 24-8, April 2024).</p>' : ''}
+    ${accState() && accState().ncAppraisal && DVT[s.type] ? '<p class="note mt-s">North Carolina: if the insurer’s offer comes in more than $2,000 under our value (or 25% of the car’s value, if that’s less), state law lets either side demand an appraisal. We’ll show you that option when the offer arrives.</p>' : ''}
     <div class="stack mt"><button class="btn red" type="button" id="ok">Set up my claim ${ARROW}</button><button class="btn ghost" type="button" id="ch">Change something</button></div><p class="err" id="er"></p>`);
     $('ch').onclick = () => { s.i = 1; s.dir = 'rev'; renderSetup(); };
     $('ok').onclick = async () => {
       const b = $('ok'); busy(b, true); const keep = app.innerHTML; loading('Setting up your claim');
       try {
-        const j = await call('p2_setup', { setup: { type: s.type, zip: s.zip, answers: s.a, vehicle: s.vehicle, vr: s.vr || '' } });
+        const j = await call('p2_setup', { setup: { type: s.type, zip: s.zip, answers: s.a, vehicle: s.vehicle, vr: s.vr || '', accState: DVT[s.type] ? accState().code : '' } });
         if (!j.ok) { if (j.reason === 'qualify') return stopScreen(j.why); renderSetup(); toast(j.message || 'Couldn’t save your claim. Try again.'); return; }
         S.files = j.files || S.files; S.setup = null; snap.save(); toast(j.existing ? 'This vehicle already has a file. Here it is.' : 'Your claim is set up.'); claim(j.fileId);
       } catch (e) { renderSetup(); toast('Couldn’t save your claim. Check your connection and try again.'); }
