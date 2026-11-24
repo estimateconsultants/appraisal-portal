@@ -106,7 +106,13 @@
     'That file is too big. Please keep it under 20 MB.': 'Ese archivo es muy grande. Debe pesar menos de 20 MB.', 'This link has expired. Call or text 910-333-6001, or email customerservice@estimateconsultants.com.': 'Este enlace venció. Envíenos un mensaje de texto al 910-333-6001 o escriba a customerservice@estimateconsultants.com.',
     'This link has expired.': 'Este enlace venció.', 'Too many codes requested. Please wait a few minutes and try again.': 'Pidió demasiados códigos. Espere unos minutos e inténtelo de nuevo.', 'Too many tries. Please send a new code.': 'Demasiados intentos. Pida un código nuevo.',
     'We’re getting a lot of sign-ins right now. Please try again in a few minutes.': 'Hay muchos inicios de sesión en este momento. Inténtelo en unos minutos.', 'You already sent this one.': 'Ya envió este archivo.',
-    'That claim wasn’t found on your account.': 'Ese reclamo no está en su cuenta.', "That claim wasn't found on your account.": 'Ese reclamo no está en su cuenta.'
+    'That claim wasn’t found on your account.': 'Ese reclamo no está en su cuenta.',
+    'Payments': 'Pagos', 'Paid securely through Stripe. Your card details never reach us.': 'Pago seguro con Stripe. Los datos de su tarjeta nunca llegan a nosotros.',
+    'Confirming your payment': 'Confirmando su pago', 'Payment received. Thank you.': 'Pago recibido. Gracias.', 'We’re still confirming your payment. It will show here shortly.': 'Todavía estamos confirmando su pago. Aparecerá aquí en un momento.',
+    'Payments aren’t available right now.': 'Los pagos no están disponibles en este momento.', 'Payments aren\'t available right now. Please try again in a few minutes.': 'Los pagos no están disponibles en este momento. Inténtelo en unos minutos.',
+    'Couldn’t open the payment page. Check your connection and try again.': 'No se pudo abrir la página de pago. Revise su conexión e inténtelo de nuevo.',
+    'First payment': 'Primer pago', 'Second payment (the offer reached $498)': 'Segundo pago (la oferta llegó a $498)', 'Diminished value appraisal, self-service': 'Avalúo de valor disminuido, autoservicio',
+    'Diminished value appraisal': 'Avalúo de valor disminuido', 'Total loss appraisal': 'Avalúo de pérdida total', 'Appraisal': 'Avalúo', "That claim wasn't found on your account.": 'Ese reclamo no está en su cuenta.'
   };
   // Pieces inside longer text (sentences joined together, or with names and numbers)
   const R = [
