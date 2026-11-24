@@ -40,7 +40,7 @@ function signIn(msg) {
   <input class="in" id="em" type="email" autocomplete="email" inputmode="email" autofocus value="${esc(S.email || Q.get('email') || '')}">
   <p class="err" id="er">${esc(msg || '')}</p>
   <button class="btn red mt-s" id="go" type="submit">Send my code ${ARROW}</button></form>
-  <p class="small muted mt">Questions? Call or text <a href="tel:9103336001">910-333-6001</a>.</p></div>`);
+  <p class="small muted mt">Questions? Email <a href="mailto:customerservice@estimateconsultants.com">customerservice@estimateconsultants.com</a>.</p></div>`);
   $('f').onsubmit = async (e) => {
     e.preventDefault(); const b = $('go'), em = $('em').value.trim(); $('er').textContent = '';
     busy(b, true);
@@ -248,7 +248,7 @@ function claim(id) {
   <div class="steps">${steps.map((x, i) => `<div class="step ${x.done ? '' : i === cur ? '' : 'next'}"><span class="dot ${x.done ? 'done' : i === cur ? 'now' : 'next'}">${x.done ? CHECK : ''}</span><div><div class="nm">${esc(x.name)}</div>${x.date || x.note ? `<div class="small ${i === cur ? '' : 'muted'}" style="${i === cur ? 'color:var(--redsoft)' : ''}">${esc([x.date, x.note].filter(Boolean).join(' · '))}</div>` : ''}</div></div>`).join('')}</div></div>` : ''}
   ${needs.length ? `<div class="card hot mt-s"><p class="k">Waiting on you · ${needs.length}</p><div class="stack" style="gap:10px">${needs.map((x) => `<div class="row"><div class="bd"><div class="nm">${esc(x.name)}</div>${x.note ? `<div class="small muted">${esc(x.note)}</div>` : ''}</div><span class="small muted">Upload soon</span></div>`).join('')}</div></div>` : ''}
   ${ups.length ? `<div class="card mt-s"><p class="k">Latest update</p>${ups.slice(-1).map((u) => `<p style="margin:0;color:var(--text)">${esc(u.text)}</p><p class="small muted" style="margin:8px 0 0">${esc(u.date || '')}</p>`).join('')}</div>` : ''}
-  <p class="small muted mt">Questions? Call or text <a href="tel:9103336001">910-333-6001</a>.</p></div>`);
+  <p class="small muted mt">Questions? Email <a href="mailto:customerservice@estimateconsultants.com">customerservice@estimateconsultants.com</a>.</p></div>`);
   $('hm').onclick = (e) => { e.preventDefault(); home(); };
 }
 
