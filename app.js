@@ -56,7 +56,7 @@ function signIn(msg) {
   view(`<div class="top-gap" style="padding-top:56px"><h1 class="h">Sign in to your claim</h1>
   <p class="lead">We’ll email you a 6-digit code. There’s no password to remember.</p>
   <form id="f" class="mt" novalidate><label class="f" for="em">Email</label>
-  <input class="in" id="em" type="email" autocomplete="email" inputmode="email" autofocus value="${esc(S.email || (S.inv && S.inv.email) || Q.get('email') || '')}">
+  <input class="in" id="em" type="email" autocomplete="email" inputmode="email" autofocus value="${esc(S.email || (S.inv && S.inv.email) || Q.get('email') || Q.get('s') || '')}">
   <p class="err" id="er">${esc(msg || '')}</p>
   <button class="btn red mt-s" id="go" type="submit">Send my code ${ARROW}</button></form>
   <p class="small muted mt">You don’t need the portal to work with us. You can also call or text <a href="tel:9103336001">910-333-6001</a>, or email <a href="mailto:customerservice@estimateconsultants.com">customerservice@estimateconsultants.com</a>.</p></div>`);
