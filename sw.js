@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ec-appraisal-portal-v21';
+const CACHE_NAME = 'ec-appraisal-portal-v22';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -6,8 +6,8 @@ const ASSETS_TO_CACHE = [
   '/logo.png',
   '/photo-guide.png',
   '/es.js?v=9',
-  '/app.js?v=19',
-  '/app.css?v=11'
+  '/app.js?v=20',
+  '/app.css?v=12'
 ];
 
 self.addEventListener('install', (event) => {
