@@ -8,8 +8,9 @@ const ZIPR = [[5,5,'NY'],[10,27,'MA'],[28,29,'RI'],[30,38,'NH'],[39,49,'ME'],[50
 const TYPES = [['dv','Diminished value','The value your car lost after an accident someone else caused',1],['ncdv','North Carolina appraisal','Diminished value through the NC appraisal process, NC cars only',1],['tl','Total loss','The insurer’s total loss offer looks too low',1],
   ['estate','Estate or probate','A vehicle’s value for an estate'],['divorce','Divorce','A vehicle’s value for a settlement'],['bank','Bank or lender','Value for a loan or collateral'],['irs','IRS donation','Value for a donated vehicle'],['classic','Classic or exotic','Collector, exotic and custom vehicles'],['equip','Heavy equipment','Construction and farm equipment'],['rv','RV or camper','Motorhomes, campers and trailers']];
 const DVT = { dv: 1, dvself: 1, ncdv: 1 };
-// Underinsured coverage paying for the car is only confirmed in these states.
-const UNDER_OK = { SC: 1, GA: 1 };
+// Underinsured coverage that pays for vehicle damage, checked against each state's statute (Nov 2026).
+// Not here on purpose: NC, DE, IN, MS, OR, CO (underinsured covers injuries only); CA, IL, UT, LA, DC, AR (uninsured only or unclear).
+const UNDER_OK = { AK: 1, GA: 1, MD: 1, NJ: 1, NM: 1, RI: 1, SC: 1, TN: 1, TX: 1, VA: 1, VT: 1, WA: 1, WV: 1 };
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const app = $('app');
@@ -128,7 +129,7 @@ function questions() {
   const s = S.setup, st = zipState(s.zip), dv = !!DVT[s.type];
   const fault = [['The other driver', 'other']].concat(st && st.um !== 'none' ? [['The other driver, and they had no insurance', 'unins']] : []).concat(st && st.um !== 'none' && UNDER_OK[st.code] ? [['The other driver, without enough insurance', 'under']] : []).concat([['Me', 'me'], ['Not decided yet', 'open']]);
   const qs = [{ id: 'type' }, { id: 'zip', title: 'What’s your ZIP code?', sub: 'Your state’s rules decide what’s available.' }, { id: 'vehicle' }];
-  if (dv) qs.push({ id: 'fault', title: 'Who was at fault?', sub: 'Diminished value is claimed from the at-fault driver’s insurer' + (st && st.um !== 'none' ? ', or your own uninsured motorist coverage in ' + st.n + '.' : '.'), opts: fault },
+  if (dv) qs.push({ id: 'fault', title: 'Who was at fault?', sub: 'Diminished value is claimed from the at-fault driver’s insurer' + (st && st.um !== 'none' ? ', or your own ' + (UNDER_OK[st.code] ? 'uninsured or underinsured' : 'uninsured') + ' motorist coverage in ' + st.n + '.' : '.'), opts: fault },
     { id: 'date', title: 'When was the accident?', sub: st ? st.n + ' allows ' + st.dl + ' years to claim.' : '' },
     { id: 'prior', title: 'Any earlier accident?', sub: 'Before this one. We’ll verify the vehicle’s accident history.', opts: [['No', 'n'], ['Yes', 'y'], ['Not sure', 'u']] },
     { id: 'repair', title: 'Has it been repaired?', sub: 'We can start either way.', opts: [['Yes, repairs are done', 'done'], ['Being repaired now', 'now'], ['Not yet', 'not']] });
