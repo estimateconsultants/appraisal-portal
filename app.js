@@ -319,14 +319,16 @@ function claim(id) {
     const sub = got ? `<span class="d ok">Received: ${x.files.map((y) => esc(y.name)).join(', ')}</span>` : (x.note ? `<span class="d">${esc(x.note)}</span>` : '');
     return `<div class="li" id="n_${esc(x.id)}"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.name)}</span>${sub}<span class="d upst" hidden></span></span>${right}</div>`;
   };
-  const showOffer = f.kind === 'dv' || f.kind === 'tl', invs = f.invoices || [], dueInv = invs.filter((x) => x.status === 'due');
+  const showOffer = f.kind === 'dv' || f.kind === 'tl', invs = f.invoices || [], dueInv = invs.filter((x) => x.status === 'due'); const needSign = !!(f.agreement && !f.agreement.signed);
   view(`<div><div class="backrow"><a href="#" id="hm" class="back">${BACK}Your claims</a></div>
   <div class="claimhd"><p class="meta">${esc(shortType(f.type))}, file ${esc(f.fileId)}</p><h1 class="plate">${esc(f.vehicle)}</h1></div>
-  ${invs.length ? `<section class="sec"><h2 class="h2">Payments</h2><div class="list${dueInv.length ? ' need' : ''}">${invs.map((x) => `<div class="li"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.desc)}</span><span class="d${x.status === 'paid' ? ' ok' : ''}">${x.status === 'paid' ? 'Paid ' + esc(x.paidAt) : money(x.cents / 100) + ' due'}${x.note ? ', ' + esc(x.note) : ''}</span></span>${x.status === 'due' ? `<button class="btn red sm" type="button" data-pay="${esc(x.id)}">Pay ${money(x.cents / 100)}</button>` : `<span class="tag ok">${money(x.cents / 100)}</span>`}</div>`).join('')}</div>
-  ${dueInv.length ? '<p class="meta" style="margin-top:10px">Paid securely through Stripe. Your card details never reach us.</p>' : ''}</section>` : ''}
+  ${f.agreement ? `<section class="sec"><h2 class="h2">Your agreement</h2><div class="list${f.agreement.signed ? '' : ' need'}"><div class="li"><span class="bd"><span class="nm" style="font-weight:600">Appraisal agreement</span>${FULLSVC(f) ? '<span class="d">This allows us to speak to the insurer about your claim.</span>' : ''}<span class="d${f.agreement.signed ? ' ok' : ''}">${f.agreement.signed ? 'Signed' : 'Ready for you to sign'}</span></span>${f.agreement.signed ? '<span class="tag ok">Signed</span>' : `<a class="btn red sm" href="${esc(f.agreement.url)}">Sign</a>`}</div></div></section>` : ''}
+  ${invs.length ? `<section class="sec"><h2 class="h2">Payments</h2><div class="list${dueInv.length ? ' need' : ''}">${invs.map((x) => `<div class="li"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.desc)}</span><span class="d${x.status === 'paid' ? ' ok' : ''}">${x.status === 'paid' ? 'Paid ' + esc(x.paidAt) : x.status === 'later' ? money(x.cents / 100) + ', not due yet' : x.status === 'waived' ? 'Waived' : money(x.cents / 100) + ' due'}${x.note ? ', ' + esc(x.note) : ''}</span></span>${x.status === 'due' && needSign ? '<span class="tag">Sign first</span>' : x.status === 'due' ? `<button class="btn red sm" type="button" data-pay="${esc(x.id)}">Pay ${money(x.cents / 100)}</button>` : x.status === 'later' ? '<span class="tag">Locked</span>' : x.status === 'waived' ? '<span class="tag ok">Waived</span>' : `<span class="tag ok">${money(x.cents / 100)}</span>`}</div>`).join('')}</div>
+  ${dueInv.length ? `<p class="meta" style="margin-top:10px">${needSign ? 'Sign your agreement above, then you can pay here.' : 'Paid securely through Stripe. Your card details never reach us.'}</p>` : ''}</section>` : ''}
   ${`<section class="sec"><h2 class="h2">${open ? 'We need from you' : 'Your documents'} ${open ? `<span class="muted" style="font-weight:400">${open} to go</span>` : ''}</h2>
   <div class="list${open ? ' need' : ''}">${needs.map(row).join('')}${row(other || { id: 'other', name: 'Anything else', note: 'Other photos or documents you want us to have' })}</div>
   <p class="meta" style="margin-top:10px">Photos or PDFs. We’ll check each one and mark it when it’s good.</p></section>`}
+  ${(f.docs || []).length ? `<section class="sec"><h2 class="h2">Your finished documents</h2><div class="list">${f.docs.map((x) => `<div class="li"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.name.replace(/\.pdf$/i, ''))}</span>${f.locked ? '<span class="d">Available once your balance is paid</span>' : ''}</span>${f.locked ? '<span class="tag">Locked</span>' : `<button class="upbtn" type="button" data-doc="${esc(x.id)}">Download</button>`}</div>`).join('')}</div></section>` : ''}
   ${f.kind === 'dv' ? `<section class="sec"><h2 class="h2">What to expect</h2>
   ${f.estimate ? `<p class="meta" style="margin:0">Where we expect it to settle</p><p class="upd" style="font-size:22px;font-weight:600;margin-top:2px">${money(f.estimate.low)}${f.estimate.high ? ' to ' + money(f.estimate.high) : ''}</p>` : ''}
   <p class="upd" style="margin-top:${f.estimate ? '10px' : '0'}">Insurers often start well below the full diminished value, and some offer very little unless there’s real pressure behind the claim. Getting the full amount can mean filing in small claims court against the at-fault driver.${f.nc ? ' In North Carolina, if you and the insurer are far enough apart, either side can demand an appraisal, which can settle it without court.' : ''} That choice is yours, and our appraisal is built to be used there.</p>
@@ -347,8 +349,17 @@ function claim(id) {
   app.querySelectorAll('.upbtn').forEach((l) => { l.tabIndex = 0; l.setAttribute('role', 'button'); l.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $(l.htmlFor).click(); } }; });
   app.querySelectorAll('[data-pay]').forEach((b) => { b.onclick = async () => {
     busy(b, true);
-    try { const j = await call('p2_pay', { fileId: f.fileId, invId: b.dataset.pay, lang: window.EC_LANG || 'en' }); if (j.paid) { S.files = j.files || S.files; snap.save(); return claim(id); } if (!j.ok || !j.url) { busy(b, false); return toast(j.message || 'Payments aren’t available right now.'); } location.href = j.url; }
+    try { const j = await call('p2_pay', { fileId: f.fileId, invId: b.dataset.pay, lang: window.EC_LANG || 'en', embedded: true }); if (j.paid) { S.files = j.files || S.files; snap.save(); return claim(id); }
+      if (j.ok && j.clientSecret && j.pk) { busy(b, false); return payHere(j.pk, j.clientSecret); }
+      if (!j.ok || !j.url) { busy(b, false); return toast(j.message || 'Payments aren’t available right now.'); } location.href = j.url; }
     catch (e) { busy(b, false); toast('Couldn’t open the payment page. Check your connection and try again.'); }
+  }; });
+  app.querySelectorAll('[data-doc]').forEach((b) => { b.onclick = async () => {
+    const t = b.textContent; b.disabled = true; b.textContent = 'Opening…';
+    try { const j = await call('p2_doc', { fileId: f.fileId, docId: b.dataset.doc }); if (!j.ok) return toast(j.message || 'Couldn’t open that document.');
+      const bin = atob(j.data), u = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k);
+      const url = URL.createObjectURL(new Blob([u], { type: j.mime })), a = document.createElement('a'); a.href = url; a.download = j.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } catch (e) { toast('Couldn’t open that document. Check your connection and try again.'); } finally { b.disabled = false; b.textContent = t; }
   }; });
   const decide = async (choice) => {
     const ok = await askChoice(choice === 'accept' ? 'Accept ' + money(f.offer) + '?' : 'Don’t accept ' + money(f.offer) + '?', choice === 'accept' ? 'We’ll note your choice and follow up with the next steps.' : 'We’ll get in touch about what you can do next.', choice === 'accept' ? 'Yes, accept it' : 'Yes, don’t accept');
@@ -395,6 +406,18 @@ function optionsBlock(f) {
   if (stt) list.push('You generally have ' + stt.dl + ' years from the accident to file suit.');
   return `<div class="note mt"><p style="margin:0 0 8px;color:#fff;font-weight:600">If you don’t accept${stt ? ', your usual options in ' + esc(stt.n) + ' are' : ', your usual options are'}:</p><ul style="margin:0;padding-left:18px">${list.map((x) => `<li style="margin:4px 0">${esc(x)}</li>`).join('')}</ul>
   <p style="margin:10px 0 0">We recommend talking with an attorney before you decide. Many offer a free first consultation. Our appraisal can be used in any of these.</p><p class="meta" style="margin:8px 0 0">General information, not legal advice.</p></div>`;
+}
+// Who we speak to the insurer for (full service, NC appraisal, total loss); self-service clients handle the insurer themselves.
+function FULLSVC(f) { return !/self[- ]service/i.test(f.type || '') && (f.kind === 'dv' || f.kind === 'tl'); }
+// Stripe's payment form right on the page.
+function loadStripe() { return window.Stripe ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://js.stripe.com/v3/'; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+async function payHere(pk, secret) {
+  const m = document.createElement('div'); m.className = 'sheet paysheet';
+  m.innerHTML = '<div class="sheetbox" role="dialog" aria-modal="true" aria-label="Payment"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h2 class="h2" style="margin:0">Payment</h2><button class="link" type="button" id="pclose">Close</button></div><div id="pform"><div class="boot" style="padding:40px 0"><span class="sp"></span></div></div><p class="meta" style="margin-top:10px">Paid securely through Stripe. Your card details never reach us.</p></div>';
+  document.body.appendChild(m);
+  let co = null; $('pclose').onclick = () => { try { co && co.destroy(); } catch (e) {} m.remove(); };
+  try { await loadStripe(); const stripe = window.Stripe(pk); co = await stripe.initEmbeddedCheckout({ fetchClientSecret: async () => secret }); $('pform').innerHTML = ''; co.mount('#pform'); }
+  catch (e) { m.remove(); toast('Couldn’t load the payment form. Check your connection and try again.'); }
 }
 function askChoice(title, text, yes) {
   return new Promise((res) => {
