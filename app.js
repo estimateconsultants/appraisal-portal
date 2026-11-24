@@ -268,6 +268,7 @@ function renderSetup() {
     const name = s.type === 'ncdv' ? 'North Carolina diminished value appraisal' : s.type === 'dv' ? 'Diminished value, full service' : s.type === 'dvself' ? 'Diminished value, self-service' : (L.type || '') + ' appraisal';
     wrap(`<h1 class="h">Check your details</h1><p class="lead"><span class="ok">Your claim qualifies</span> for a ${esc(name.charAt(0).toLowerCase() + name.slice(1)).replace(/^north carolina/, 'North Carolina')}.</p>
     <dl class="list sum mt">${rows.map((r) => `<div><dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>
+    ${DVT[s.type] ? '<p class="note mt-s">Insurers often offer much less than the full diminished value at first. Getting the full amount can mean small claims court. We’ll give you our honest estimate of where it may settle once we’ve done the appraisal.</p>' : ''}
     ${DVT[s.type] && st && st.code === 'MD' && /unins|under/.test(s.a.fault || '') ? '<p class="note mt-s">Maryland: the state insurance department says uninsured and underinsured motorist coverage must pay diminished value, and insurers can’t exclude it (Bulletin 24-8, April 2024).</p>' : ''}
     ${accState() && accState().ncAppraisal && DVT[s.type] ? '<p class="note mt-s">North Carolina: if the other driver’s fault isn’t in dispute and their insurer’s number is more than $2,000 from ours (or 25% of the car’s value, if that’s less), state law lets either side demand an appraisal. Each side names a licensed appraiser; if they can’t agree, an umpire decides between the two numbers, and either side can reject that decision within 15 days. We’ll show you this option if the offer comes in that far apart.</p>' : ''}
     <div class="stack mt"><button class="btn red" type="button" id="ok">Set up my claim ${ARROW}</button><button class="btn ghost" type="button" id="ch">Change something</button></div><p class="err" id="er"></p>`);
@@ -326,9 +327,17 @@ function claim(id) {
   ${`<section class="sec"><h2 class="h2">${open ? 'We need from you' : 'Your documents'} ${open ? `<span class="muted" style="font-weight:400">${open} to go</span>` : ''}</h2>
   <div class="list${open ? ' need' : ''}">${needs.map(row).join('')}${row(other || { id: 'other', name: 'Anything else', note: 'Other photos or documents you want us to have' })}</div>
   <p class="meta" style="margin-top:10px">Photos or PDFs. We’ll check each one and mark it when it’s good.</p></section>`}
-  ${showOffer ? `<section class="sec"><h2 class="h2">The insurer’s offer</h2>${f.offer != null && !S.editOffer ? `<p class="upd" style="font-size:20px;font-weight:600">${money(f.offer)}</p><p class="meta" style="margin-top:4px">${f.offerAt ? 'Entered ' + esc(f.offerAt) + '. ' : ''}<button class="link" type="button" id="oe">Change it</button></p>`
-    : `<form id="of" novalidate><label class="f" for="oa">Offer amount</label><div style="display:flex;gap:10px"><input class="in" id="oa" inputmode="decimal" placeholder="$0" value="${f.offer != null ? esc(f.offer) : ''}" style="max-width:220px"><button class="btn red sm" type="submit" id="os">Save</button></div>
-    <p class="meta" style="margin-top:8px">Add the offer letter or email above, under ${f.kind === 'tl' ? '“Offer letter or email”' : '“Anything else”'}, so we can check it.</p></form>`}</section>` : ''}
+  ${f.kind === 'dv' ? `<section class="sec"><h2 class="h2">What to expect</h2>
+  ${f.estimate ? `<p class="meta" style="margin:0">Where we expect it to settle</p><p class="upd" style="font-size:22px;font-weight:600;margin-top:2px">${money(f.estimate.low)}${f.estimate.high ? ' to ' + money(f.estimate.high) : ''}</p>` : ''}
+  <p class="upd" style="margin-top:${f.estimate ? '10px' : '0'}">Insurers often start well below the full diminished value, and some offer very little unless there’s real pressure behind the claim. Getting the full amount can mean filing in small claims court against the at-fault driver.${f.nc ? ' In North Carolina, if you and the insurer are far enough apart, either side can demand an appraisal, which can settle it without court.' : ''} That choice is yours, and our appraisal is built to be used there.</p>
+  <p class="meta" style="margin-top:8px">General information, not legal advice.</p></section>` : ''}
+  ${showOffer && f.offer != null ? `<section class="sec"><h2 class="h2">The insurer’s offer</h2><p class="upd" style="font-size:22px;font-weight:600">${money(f.offer)}</p>
+  ${!f.final ? '<p class="meta" style="margin-top:4px">We’re still working with the insurer to get as close to our value as we can.</p>'
+    : f.decision ? `<p class="meta ${f.decision.choice === 'accept' ? 'ok' : ''}" style="margin-top:4px">${f.decision.choice === 'accept' ? 'You accepted this offer on ' + esc(f.decision.at) + '.' : 'You chose not to accept this offer on ' + esc(f.decision.at) + '.'} We’ll be in touch about next steps.</p>`
+    : `<p class="lead" style="margin-top:6px">This is the insurer’s final offer. We presented our appraisal and pushed for as close to our value as we could, and this is the most they’re willing to pay. Would you like to accept it?</p>
+       <div class="stack mt-s"><button class="btn red" type="button" id="acc">Accept the offer ${ARROW}</button><button class="btn ghost" type="button" id="dec">Don’t accept</button></div>`}
+  ${f.final ? optionsBlock(f) : ''}
+  ${f.waived ? '<p class="meta ok" style="margin-top:12px">We waived the $199 second payment.</p>' : ''}</section>` : ''}
   ${steps.length ? `<section class="sec"><h2 class="h2">Progress <span class="muted" style="font-weight:400">${done} of ${steps.length} done</span></h2>
   <ol class="tl">${steps.map((x, i) => `<li class="${x.done ? 'done' : i === cur ? 'now' : 'next'}"><span class="dot">${x.done ? CHECK : ''}</span><div><div class="nm">${esc(x.name)}</div>${x.date || x.note ? `<div class="sub">${esc([x.note, x.date].filter(Boolean).join(', '))}</div>` : ''}</div></li>`).join('')}</ol></section>` : ''}
   ${ups.length ? `<section class="sec"><h2 class="h2">Latest update</h2>${ups.slice(-1).map((u) => `<p class="upd">${esc(u.text)}</p><p class="meta" style="margin-top:6px">${esc(u.date || '')}</p>`).join('')}</section>` : ''}
@@ -341,13 +350,14 @@ function claim(id) {
     try { const j = await call('p2_pay', { fileId: f.fileId, invId: b.dataset.pay, lang: window.EC_LANG || 'en' }); if (j.paid) { S.files = j.files || S.files; snap.save(); return claim(id); } if (!j.ok || !j.url) { busy(b, false); return toast(j.message || 'Payments aren’t available right now.'); } location.href = j.url; }
     catch (e) { busy(b, false); toast('Couldn’t open the payment page. Check your connection and try again.'); }
   }; });
-  if ($('oe')) $('oe').onclick = () => { S.editOffer = 1; claim(id); };
-  if ($('of')) $('of').onsubmit = async (e) => {
-    e.preventDefault(); const v = $('oa').value.replace(/[^\d.]/g, ''); if (!v) return toast('Enter the amount of the offer.');
-    const b = $('os'); busy(b, true);
-    try { const j = await call('p2_offer', { fileId: f.fileId, amount: v }); if (!j.ok) return toast(j.message || 'Couldn’t save the offer.'); S.files = j.files || S.files; S.editOffer = 0; snap.save(); toast('Offer saved.'); claim(id); }
-    catch (err) { toast('Couldn’t save the offer. Check your connection and try again.'); } finally { busy(b, false); }
+  const decide = async (choice) => {
+    const ok = await askChoice(choice === 'accept' ? 'Accept ' + money(f.offer) + '?' : 'Don’t accept ' + money(f.offer) + '?', choice === 'accept' ? 'We’ll note your choice and follow up with the next steps.' : 'We’ll get in touch about what you can do next.', choice === 'accept' ? 'Yes, accept it' : 'Yes, don’t accept');
+    if (!ok) return;
+    try { const r = await call('p2_decide', { fileId: f.fileId, choice }); if (!r.ok) return toast(r.message || 'Couldn’t save your choice.'); S.files = r.files || S.files; snap.save(); toast('Thanks. We got your choice.'); claim(id); }
+    catch (err) { toast('Couldn’t save your choice. Check your connection and try again.'); }
   };
+  if ($('acc')) $('acc').onclick = () => decide('accept');
+  if ($('dec')) $('dec').onclick = () => decide('decline');
 }
 
 // ---------- uploads: photo check, shrink, duplicate catch ----------
@@ -370,6 +380,29 @@ function photoCheck(img) {
   return '';
 }
 function shrink(img) { const max = 2000, k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.85).split(',')[1]; }
+// What a client can usually do if they don't accept (by the accident state), and a nudge to talk with an attorney.
+const OPTS = {
+  NC: ['Demand an appraisal, if fault isn’t in dispute and you’re more than $2,000 apart (or 25% of the car’s value, if that’s less). N.C. Gen. Stat. § 20-279.21(d1).', 'File in small claims court for up to $10,000.'],
+  SC: ['File in magistrate court for up to $7,500.', 'Ask about South Carolina’s property damage arbitration.'],
+  GA: ['Send a written settlement demand by certified mail. Under O.C.G.A. § 33-4-7, if the insurer doesn’t pay within 60 days and you later recover at least that amount, it can owe a penalty and attorney’s fees.', 'File in magistrate court for up to $15,000.'],
+  VA: ['File in the small claims division of general district court for up to $5,000.'],
+  TN: ['File in general sessions court, which handles civil cases up to $25,000.'],
+  FL: ['File in small claims court for up to $8,000.'],
+  TX: ['File in justice court for up to $20,000.']
+};
+function optionsBlock(f) {
+  const c = String(f.acc || '').toUpperCase(), stt = STATES[c], list = (OPTS[c] || ['File in small claims court against the at-fault driver. Your state court’s website lists the limit.']).slice();
+  if (stt) list.push('You generally have ' + stt.dl + ' years from the accident to file suit.');
+  return `<div class="note mt"><p style="margin:0 0 8px;color:#fff;font-weight:600">If you don’t accept${stt ? ', your usual options in ' + esc(stt.n) + ' are' : ', your usual options are'}:</p><ul style="margin:0;padding-left:18px">${list.map((x) => `<li style="margin:4px 0">${esc(x)}</li>`).join('')}</ul>
+  <p style="margin:10px 0 0">We recommend talking with an attorney before you decide. Many offer a free first consultation. Our appraisal can be used in any of these.</p><p class="meta" style="margin:8px 0 0">General information, not legal advice.</p></div>`;
+}
+function askChoice(title, text, yes) {
+  return new Promise((res) => {
+    const m = document.createElement('div'); m.className = 'sheet';
+    m.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h2 class="h2">${esc(title)}</h2><p class="meta" style="margin:0 0 16px">${esc(text)}</p><div class="stack"><button class="btn red" type="button" data-a="1">${esc(yes)}</button><button class="btn ghost" type="button" data-a="0">Go back</button></div></div>`;
+    document.body.appendChild(m); m.querySelectorAll('button').forEach((b) => { b.onclick = () => { m.remove(); res(b.dataset.a === '1'); }; }); m.querySelector('button').focus();
+  });
+}
 function askPhoto(name, why) {
   return new Promise((res) => {
     const m = document.createElement('div'); m.className = 'sheet';
