@@ -433,17 +433,17 @@ function setupProgress() {
 // ---------- vehicle photos: one guided shot at a time ----------
 const SHOT_ICON = { corner: '<path d="M6 30h52M12 30l5-11h26l9 11M17 30a4 4 0 1 0 8 0M41 30a4 4 0 1 0 8 0"/><path d="M44 12l8-6M52 6v6h-6"/>', side: '<path d="M4 32h56M8 32l6-12h30l10 12M14 32a4 4 0 1 0 8 0M42 32a4 4 0 1 0 8 0"/>',
   odo: '<circle cx="32" cy="24" r="16"/><path d="M32 24l9-7"/><path d="M24 34h16"/>', vin: '<rect x="10" y="12" width="44" height="24" rx="3"/><path d="M16 20h32M16 28h20"/>', seat: '<path d="M22 8h14l-2 22H24zM18 30h28v8H18z"/>', close: '<circle cx="28" cy="22" r="12"/><path d="M37 31l12 12"/>', tire: '<circle cx="32" cy="24" r="16"/><circle cx="32" cy="24" r="6"/>' };
+// Same shots, names and order as the Vehicle Photo Guide; each tile shows the guide's example photo.
 const SHOTS = {
-  fl: ['Front, driver side corner', 'corner', 'Stand back far enough to get the whole car in.'], fr: ['Front, passenger side corner', 'corner', 'Whole car in the frame.'],
-  rl: ['Rear, driver side corner', 'corner', 'Whole car in the frame.'], rr: ['Rear, passenger side corner', 'corner', 'Whole car in the frame.'],
-  sl: ['Driver side', 'side', 'Straight on, whole side.'], sr: ['Passenger side', 'side', 'Straight on, whole side.'],
-  odo: ['Odometer', 'odo', 'Car on, mileage showing.'], vin: ['VIN sticker', 'vin', 'On the driver door jamb.'],
-  front: ['Front seats and dash', 'seat', 'From the open driver door.'], rear: ['Back seats', 'seat', 'From an open rear door.'],
-  tires: ['Tire tread', 'tire', 'One front tire, close up.'], dmg: ['Damage close-up', 'close', 'Up close, in good light. Add as many as you need.'], fix: ['Repaired area', 'close', 'Up close, in good light. Add as many as you need.']
+  rf: ['Right front corner', 'rf', 'Passenger side, front. Stand back so the whole vehicle is in the photo.'], lf: ['Left front corner', 'lf', 'Driver side, front. Whole vehicle in the photo.'],
+  rr: ['Right rear corner', 'rr', 'Passenger side, back. Whole vehicle in the photo.'], lr: ['Left rear corner', 'lr', 'Driver side, back. Whole vehicle in the photo.'],
+  vin: ['VIN', 'vind', 'The sticker in the driver door jamb, or the plate through the windshield.'], odo: ['Odometer with mileage', 'odo', 'Turn the car on so the mileage shows. No need to start the engine.'],
+  eng: ['Engine bay', 'eng', 'Hood open, the whole engine bay.'], ia: ['Interior from the driver door', 'ia', 'All four doors open.'], ib: ['Interior from the passenger door', 'ib', 'Front seats and dash.'],
+  ic: ['Interior from the left rear door', 'ic', 'Back seats.'], id: ['Interior from the right rear door', 'id', 'Back seats.'],
+  dmg: ['Damage or wear close-up', '', 'Scratches, dents, chips, stains, tears. Up close, in good light. Add as many as you need.']
 };
 function isShotNeed(x) { return x.id === 'photos' || /^vehicle photos$/i.test(x.name || ''); }
-function shotsFor(f, x) { const base = ['fl', 'fr', 'rl', 'rr', 'sl', 'sr']; const hasOdo = (f.needs || []).some((n) => n.id === 'odo');
-  return base.concat(hasOdo ? [] : ['odo'], ['vin', 'front'], f.kind === 'tl' ? ['rear', 'tires', 'dmg'] : f.kind === 'dv' ? ['fix'] : ['rear']); }
+function shotsFor(f, x) { const hasOdo = (f.needs || []).some((n) => n.id === 'odo'); return ['rf', 'lf', 'rr', 'lr', 'vin'].concat(hasOdo ? [] : ['odo'], ['eng', 'ia', 'ib', 'ic', 'id', 'dmg']); }
 function shotDone(x, k) { const nm = SHOTS[k][0].toLowerCase(); return (x.files || []).some((y) => String(y.name || '').toLowerCase().indexOf(nm) === 0); }
 function photoTool(f, id, needId) {
   const x = (f.needs || []).find((n) => n.id === needId); if (!x) return; const keys = shotsFor(f, x), local = {};
@@ -453,11 +453,12 @@ function photoTool(f, id, needId) {
     const done = keys.filter((k) => shotDone(x, k) || local[k] === 'ok').length;
     m.innerHTML = `<div class="shotbar"><button class="link" type="button" id="shx">Done</button><b>Vehicle photos</b><span class="muted">${done} of ${keys.length}</span></div>
       <div class="shotprog"><i style="width:${Math.round(done / keys.length * 100)}%"></i></div>
-      <p class="meta shothint">Tap a photo to take it. Daylight and the whole car in frame work best.</p>
+      <p class="meta shothint">Tap each one to take it. Daylight, level ground, the whole vehicle in frame, and no people in the photos.</p>
       <div class="shots">${keys.map((k) => { const s = SHOTS[k], st = local[k] || (shotDone(x, k) ? 'ok' : '');
-        return `<label class="shot ${st}" for="sh_${k}"><span class="si">${st === 'ok' ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0d1a12" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg>' : st === 'up' ? '<span class="sp"></span>' : `<svg viewBox="0 0 64 44" width="56" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${SHOT_ICON[s[1]]}</svg>`}</span>
-          ${local['t_' + k] ? `<img src="${local['t_' + k]}" alt="">` : ''}<span class="sn">${esc(s[0])}</span><span class="sd">${st === 'warn' ? esc(local['w_' + k]) + ' Tap to retake.' : esc(s[2])}</span>
-          <input type="file" id="sh_${k}" data-k="${k}" accept="image/*" capture="environment" ${/dmg|fix/.test(k) ? 'multiple' : ''} hidden></label>`; }).join('')}</div>
+        const pic = local['t_' + k] ? `<img src="${local['t_' + k]}" alt="">` : s[1] ? `<img class="ex" src="/guide/${s[1]}.webp" alt="" loading="lazy"><em>Example</em>` : `<span class="nopic"><svg viewBox="0 0 64 44" width="56" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">${SHOT_ICON.close}</svg></span>`;
+        return `<label class="shot ${st}" for="sh_${k}"><span class="pic">${pic}${st === 'ok' ? '<span class="si"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#0d1a12" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></span>' : st === 'up' ? '<span class="si up"><span class="sp"></span></span>' : ''}</span>
+          <span class="sn">${esc(s[0])}</span><span class="sd">${st === 'warn' ? esc(local['w_' + k]) + ' Tap to retake.' : esc(s[2])}</span>
+          <input type="file" id="sh_${k}" data-k="${k}" accept="image/*" capture="environment" ${k === 'dmg' ? 'multiple' : ''} hidden></label>`; }).join('')}</div>
       <div class="shotfoot"><label class="btn ghost" for="shlib">Choose from your photos instead</label><input type="file" id="shlib" accept="image/*" multiple hidden></div>`;
     $('shx').onclick = close;
     m.querySelectorAll('input[data-k]').forEach((inp) => { inp.onchange = () => { const l = [...inp.files]; inp.value = ''; l.forEach((file, i) => sendShot(inp.dataset.k, file, i)); }; });
