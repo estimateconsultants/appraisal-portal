@@ -1,12 +1,13 @@
-const CACHE_NAME = 'ec-appraisal-portal-v11';
+const CACHE_NAME = 'ec-appraisal-portal-v12';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
   '/logo.png',
   '/photo-guide.png',
-  '/app.js?v=5',
-  '/app.css?v=2'
+  '/es.js?v=1',
+  '/app.js?v=11',
+  '/app.css?v=6'
 ];
 
 self.addEventListener('install', (event) => {
@@ -38,6 +39,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Pages: always try the network first so a new version shows right away; the cache is only for offline.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request).then((r) => { const c = r.clone(); caches.open(CACHE_NAME).then((cache) => cache.put('/', c)); return r; }).catch(() => caches.match('/')));
+    return;
+  }
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
