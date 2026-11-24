@@ -335,7 +335,7 @@ function claim(id) {
   ${!f.final ? '<p class="meta" style="margin-top:4px">We’re still working with the insurer to get as close to our value as we can.</p>'
     : f.decision ? `<p class="meta ${f.decision.choice === 'accept' ? 'ok' : ''}" style="margin-top:4px">${f.decision.choice === 'accept' ? 'You accepted this offer on ' + esc(f.decision.at) + '.' : 'You chose not to accept this offer on ' + esc(f.decision.at) + '.'} We’ll be in touch about next steps.</p>`
     : `<p class="lead" style="margin-top:6px">This is the insurer’s final offer. We presented our appraisal and pushed for as close to our value as we could, and this is the most they’re willing to pay. Would you like to accept it?</p>
-       <div class="stack mt-s"><button class="btn red" type="button" id="acc">Accept the offer ${ARROW}</button><button class="btn ghost" type="button" id="dec">Don’t accept</button></div>`}
+       <div class="stack mt-s"><div class="grid2"><button class="btn ghost" type="button" id="acc">Accept the offer</button><button class="btn ghost" type="button" id="dec">Don’t accept</button></div></div>`}
   ${f.final ? optionsBlock(f) : ''}
   ${f.waived ? '<p class="meta ok" style="margin-top:12px">We waived the $199 second payment.</p>' : ''}</section>` : ''}
   ${steps.length ? `<section class="sec"><h2 class="h2">Progress <span class="muted" style="font-weight:400">${done} of ${steps.length} done</span></h2>
@@ -399,7 +399,7 @@ function optionsBlock(f) {
 function askChoice(title, text, yes) {
   return new Promise((res) => {
     const m = document.createElement('div'); m.className = 'sheet';
-    m.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h2 class="h2">${esc(title)}</h2><p class="meta" style="margin:0 0 16px">${esc(text)}</p><div class="stack"><button class="btn red" type="button" data-a="1">${esc(yes)}</button><button class="btn ghost" type="button" data-a="0">Go back</button></div></div>`;
+    m.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h2 class="h2">${esc(title)}</h2><p class="meta" style="margin:0 0 16px">${esc(text)}</p><div class="stack"><button class="btn ghost" type="button" data-a="1">${esc(yes)}</button><button class="btn ghost" type="button" data-a="0">Go back</button></div></div>`;
     document.body.appendChild(m); m.querySelectorAll('button').forEach((b) => { b.onclick = () => { m.remove(); res(b.dataset.a === '1'); }; }); m.querySelector('button').focus();
   });
 }
