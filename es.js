@@ -130,11 +130,17 @@
     'Payments aren’t available right now.': 'Los pagos no están disponibles en este momento.', 'Payments aren\'t available right now. Please try again in a few minutes.': 'Los pagos no están disponibles en este momento. Inténtelo en unos minutos.',
     'Couldn’t open the payment page. Check your connection and try again.': 'No se pudo abrir la página de pago. Revise su conexión e inténtelo de nuevo.',
     'First payment': 'Primer pago', 'Second payment (the offer reached $498)': 'Segundo pago (la oferta llegó a $498)', 'Diminished value appraisal, self-service': 'Avalúo de valor disminuido, autoservicio',
-    'Diminished value appraisal': 'Avalúo de valor disminuido', 'Total loss appraisal': 'Avalúo de pérdida total', 'Appraisal': 'Avalúo', "That claim wasn't found on your account.": 'Ese reclamo no está en su cuenta.'
+    'Diminished value appraisal': 'Avalúo de valor disminuido', 'Total loss appraisal': 'Avalúo de pérdida total', 'Appraisal': 'Avalúo', "That claim wasn't found on your account.": 'Ese reclamo no está en su cuenta.',
+    'Something not right?': '¿Algo no está bien?', 'If something on this page looks wrong or you’re stuck, tell us here. It goes straight to your file.': 'Si algo en esta página parece incorrecto o no sabe cómo seguir, díganos aquí. Su mensaje va directo a su expediente.',
+    'Tell us what’s wrong': 'Díganos qué pasa', 'What’s wrong?': '¿Qué pasa?', 'A sentence or two is fine. We’ll reply by email.': 'Basta con una o dos frases. Le responderemos por correo electrónico.',
+    'Your message': 'Su mensaje', 'Send': 'Enviar', 'Cancel': 'Cancelar', 'Tell us a little about what’s wrong.': 'Cuéntenos un poco qué pasa.', 'Sent. We’ll get back to you by email.': 'Enviado. Le responderemos por correo electrónico.',
+    'Couldn’t send your message.': 'No se pudo enviar su mensaje.', 'Couldn’t send your message. Check your connection and try again.': 'No se pudo enviar su mensaje. Revise su conexión e inténtelo de nuevo.',
+    'We already have your messages. We’ll get back to you soon.': 'Ya tenemos sus mensajes. Le responderemos pronto.'
   };
   // Pieces inside longer text (sentences joined together, or with names and numbers)
   const R = [
     [/^(\d+) of (\d+)$/, '$1 de $2'], [/^(\d+) to go$/, (m, n) => (n === '1' ? 'falta 1' : 'faltan ' + n)], [/^(\d+) of (\d+) done$/, '$1 de $2 listos'],
+    [/^We got your message from (.+)\. We’ll look into it and get back to you by email\.$/, (m, d) => 'Recibimos su mensaje del ' + d + '. Lo revisaremos y le responderemos por correo electrónico.'],
     [/^Sending (\d+) of (\d+)…$/, 'Enviando $1 de $2…'], [/^Received: /, 'Recibido: '], [/^Entered (.+)\.$/, 'Registrada el $1.'],
     [/^(.+), file (EC-[\w-]+)$/, (m, a, b) => tr(a) + ', expediente ' + b],
     [/In (.+?), you generally have (\d+) years from the accident to file suit if the claim isn’t resolved\. The insurer may close the claim sooner, so it’s best to start early\./, (m, s, n) => 'En ' + st(s) + ', por lo general tiene ' + n + ' años desde el accidente para presentar una demanda si el reclamo no se resuelve. La aseguradora puede cerrar el reclamo antes, así que es mejor empezar pronto.'],

@@ -343,7 +343,12 @@ function claim(id) {
   ${steps.length ? `<section class="sec"><h2 class="h2">Progress <span class="muted" style="font-weight:400">${done} of ${steps.length} done</span></h2>
   <ol class="tl">${steps.map((x, i) => `<li class="${x.done ? 'done' : i === cur ? 'now' : 'next'}"><span class="dot">${x.done ? CHECK : ''}</span><div><div class="nm">${esc(x.name)}</div>${x.date || x.note ? `<div class="sub">${esc([x.note, x.date].filter(Boolean).join(', '))}</div>` : ''}</div></li>`).join('')}</ol></section>` : ''}
   ${ups.length ? `<section class="sec"><h2 class="h2">Latest update</h2>${ups.slice(-1).map((u) => `<p class="upd">${esc(u.text)}</p><p class="meta" style="margin-top:6px">${esc(u.date || '')}</p>`).join('')}</section>` : ''}
+  <section class="sec"><h2 class="h2">Something not right?</h2>
+  ${(f.issues || []).map((x) => `<p class="meta ok" style="margin:0 0 8px">We got your message from ${esc(x.at)}. We’ll look into it and get back to you by email.</p>`).join('')}
+  <p class="meta" style="margin:0 0 10px">If something on this page looks wrong or you’re stuck, tell us here. It goes straight to your file.</p>
+  <button class="btn ghost sm" type="button" id="iss">Tell us what’s wrong</button></section>
   <p class="small muted mt">Questions? Email <a href="mailto:customerservice@estimateconsultants.com">customerservice@estimateconsultants.com</a>.</p></div>`);
+  $('iss').onclick = () => reportIssue(f, id);
   $('hm').onclick = (e) => { e.preventDefault(); history.replaceState(null, '', location.pathname); home(); };
   app.querySelectorAll('input[type=file][data-need]').forEach((inp) => { inp.onchange = () => { const list = [...inp.files]; inp.value = ''; if (list.length) uploadAll(f, inp.dataset.need, list); }; });
   app.querySelectorAll('.upbtn').forEach((l) => { l.tabIndex = 0; l.setAttribute('role', 'button'); l.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $(l.htmlFor).click(); } }; });
@@ -425,6 +430,22 @@ function askChoice(title, text, yes) {
     m.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h2 class="h2">${esc(title)}</h2><p class="meta" style="margin:0 0 16px">${esc(text)}</p><div class="stack"><button class="btn ghost" type="button" data-a="1">${esc(yes)}</button><button class="btn ghost" type="button" data-a="0">Go back</button></div></div>`;
     document.body.appendChild(m); m.querySelectorAll('button').forEach((b) => { b.onclick = () => { m.remove(); res(b.dataset.a === '1'); }; }); m.querySelector('button').focus();
   });
+}
+// "Something not right?": the client's note goes on the file and flags it for Kevin until he marks it handled.
+function reportIssue(f, id) {
+  const m = document.createElement('div'); m.className = 'sheet';
+  m.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true" aria-labelledby="isst"><h2 class="h2" id="isst">What’s wrong?</h2><p class="meta" style="margin:0 0 12px">A sentence or two is fine. We’ll reply by email.</p>
+    <label class="f" for="istx" style="position:absolute;left:-9999px">Your message</label><textarea class="in" id="istx" rows="5" maxlength="2000" style="height:auto;padding:14px 16px;line-height:1.5;resize:vertical"></textarea>
+    <div class="stack mt-s"><button class="btn red" type="button" id="issgo">Send</button><button class="btn ghost" type="button" id="issno">Cancel</button></div></div>`;
+  document.body.appendChild(m); $('istx').focus();
+  $('issno').onclick = () => m.remove();
+  $('issgo').onclick = async () => {
+    const text = $('istx').value.trim(); if (text.length < 3) { $('istx').focus(); return toast('Tell us a little about what’s wrong.'); }
+    const b = $('issgo'); busy(b, true);
+    try { const r = await call('p2_issue', { fileId: f.fileId, text }); if (!r.ok) { busy(b, false); return toast(r.message || 'Couldn’t send your message.'); }
+      S.files = r.files || S.files; snap.save(); m.remove(); toast('Sent. We’ll get back to you by email.'); claim(id); }
+    catch (e) { busy(b, false); toast('Couldn’t send your message. Check your connection and try again.'); }
+  };
 }
 function askPhoto(name, why) {
   return new Promise((res) => {
