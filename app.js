@@ -5,7 +5,9 @@ const API = 'https://script.google.com/macros/s/AKfycbw9irQ5WbSoTcrPq8d4EU7L0U0p
 const STATES = {"AL":{"n":"Alabama","dl":6,"um":"none"},"AK":{"n":"Alaska","dl":2,"um":"both"},"AZ":{"n":"Arizona","dl":2,"um":"none"},"AR":{"n":"Arkansas","dl":3,"um":"both"},"CA":{"n":"California","dl":3,"um":"both"},"CO":{"n":"Colorado","dl":3,"um":"both"},"CT":{"n":"Connecticut","dl":2,"um":"none"},"DE":{"n":"Delaware","dl":2,"um":"both"},"DC":{"n":"District of Columbia","dl":3,"um":"both"},"FL":{"n":"Florida","dl":2,"um":"none"},"GA":{"n":"Georgia","dl":4,"um":"both"},"HI":{"n":"Hawaii","dl":2,"um":"none"},"ID":{"n":"Idaho","dl":3,"um":"none"},"IL":{"n":"Illinois","dl":5,"um":"both"},"IN":{"n":"Indiana","dl":2,"um":"both"},"IA":{"n":"Iowa","dl":5,"um":"none"},"KS":{"n":"Kansas","dl":2,"um":"none"},"KY":{"n":"Kentucky","dl":2,"um":"none"},"LA":{"n":"Louisiana","dl":2,"um":"both"},"ME":{"n":"Maine","dl":6,"um":"none"},"MD":{"n":"Maryland","dl":3,"um":"both"},"MA":{"n":"Massachusetts","dl":3,"um":"none","noCert":true},"MI":{"n":"Michigan","dl":3,"um":"none","noDV":true},"MN":{"n":"Minnesota","dl":6,"um":"none"},"MS":{"n":"Mississippi","dl":3,"um":"both"},"MO":{"n":"Missouri","dl":5,"um":"none"},"MT":{"n":"Montana","dl":2,"um":"none"},"NE":{"n":"Nebraska","dl":4,"um":"none","noDV":true},"NV":{"n":"Nevada","dl":3,"um":"none"},"NH":{"n":"New Hampshire","dl":3,"um":"none"},"NJ":{"n":"New Jersey","dl":6,"um":"both"},"NM":{"n":"New Mexico","dl":4,"um":"both"},"NY":{"n":"New York","dl":3,"um":"none"},"NC":{"n":"North Carolina","dl":3,"um":"uninsured","ncAppraisal":true},"ND":{"n":"North Dakota","dl":6,"um":"none"},"OH":{"n":"Ohio","dl":2,"um":"none"},"OK":{"n":"Oklahoma","dl":2,"um":"none"},"OR":{"n":"Oregon","dl":6,"um":"both"},"PA":{"n":"Pennsylvania","dl":2,"um":"none"},"RI":{"n":"Rhode Island","dl":10,"um":"both"},"SC":{"n":"South Carolina","dl":3,"um":"both"},"SD":{"n":"South Dakota","dl":6,"um":"none"},"TN":{"n":"Tennessee","dl":3,"um":"both"},"TX":{"n":"Texas","dl":2,"um":"both"},"UT":{"n":"Utah","dl":3,"um":"both"},"VT":{"n":"Vermont","dl":3,"um":"both"},"VA":{"n":"Virginia","dl":5,"um":"both"},"WA":{"n":"Washington","dl":3,"um":"both"},"WV":{"n":"West Virginia","dl":2,"um":"both"},"WI":{"n":"Wisconsin","dl":3,"um":"none"},"WY":{"n":"Wyoming","dl":4,"um":"none"}};
 const ZIPR = [[5,5,'NY'],[10,27,'MA'],[28,29,'RI'],[30,38,'NH'],[39,49,'ME'],[50,54,'VT'],[55,55,'MA'],[56,59,'VT'],[60,69,'CT'],[70,89,'NJ'],[100,149,'NY'],[150,196,'PA'],[197,199,'DE'],[200,200,'DC'],[201,201,'VA'],[202,205,'DC'],[206,219,'MD'],[220,246,'VA'],[247,268,'WV'],[270,289,'NC'],[290,299,'SC'],[300,319,'GA'],[320,349,'FL'],[350,369,'AL'],[370,385,'TN'],[386,397,'MS'],[398,399,'GA'],[400,427,'KY'],[430,459,'OH'],[460,479,'IN'],[480,499,'MI'],[500,528,'IA'],[530,549,'WI'],[550,567,'MN'],[569,569,'DC'],[570,577,'SD'],[580,588,'ND'],[590,599,'MT'],[600,629,'IL'],[630,658,'MO'],[660,679,'KS'],[680,693,'NE'],[700,714,'LA'],[716,729,'AR'],[730,732,'OK'],[733,733,'TX'],[734,749,'OK'],[750,799,'TX'],[800,816,'CO'],[820,831,'WY'],[832,838,'ID'],[840,847,'UT'],[850,865,'AZ'],[870,884,'NM'],[885,885,'TX'],[889,898,'NV'],[900,961,'CA'],[967,968,'HI'],[970,979,'OR'],[980,994,'WA'],[995,999,'AK']];
 const TYPES = [['dv','Diminished value'],['ncdv','NC appraisal (diminished value)'],['tl','Total loss'],['estate','Estate / probate'],['divorce','Divorce'],['bank','Bank & collateral'],['irs','IRS donation'],['classic','Classic or exotic'],['equip','Heavy equipment'],['rv','RV or camper']];
-const DVT = { dv: 1, ncdv: 1 };
+const DVT = { dv: 1, dvself: 1, ncdv: 1 };
+// Underinsured coverage paying for the car is only confirmed in these states.
+const UNDER_OK = { SC: 1, GA: 1 };
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const app = $('app');
@@ -114,12 +116,12 @@ function profile() {
 
 // ---------- claim setup ----------
 function startSetup(type) {
-  S.setup = { type: type || '', i: 0, a: {}, zip: '', vehicle: { vin: Q.get('vin') || '', mileage: Q.get('miles') || '', desc: Q.get('vehicle') || '' }, dir: '' };
+  S.setup = { type: type || '', i: 0, a: {}, zip: '', vr: Q.get('vr') || '', vehicle: { vin: Q.get('vin') || '', mileage: Q.get('miles') || '', desc: Q.get('vehicle') || '' }, dir: '' };
   if (type) S.setup.i = 1; renderSetup();
 }
 function questions() {
   const s = S.setup, st = zipState(s.zip), dv = !!DVT[s.type];
-  const fault = [['The other driver', 'other']].concat(st && st.um !== 'none' ? [['The other driver, and they had no insurance', 'unins']] : []).concat(st && st.um === 'both' ? [['The other driver, without enough insurance', 'under']] : []).concat([['Me', 'me'], ['Not decided yet', 'open']]);
+  const fault = [['The other driver', 'other']].concat(st && st.um !== 'none' ? [['The other driver, and they had no insurance', 'unins']] : []).concat(st && st.um !== 'none' && UNDER_OK[st.code] ? [['The other driver, without enough insurance', 'under']] : []).concat([['Me', 'me'], ['Not decided yet', 'open']]);
   const qs = [{ id: 'type' }, { id: 'zip', title: 'What ZIP code is the car kept in?', sub: 'Your state’s rules decide what’s available.' }];
   if (dv) qs.push({ id: 'fault', title: 'Who was at fault?', sub: 'Diminished value is claimed from the at-fault driver’s insurer' + (st && st.um !== 'none' ? ', or your own uninsured motorist coverage in ' + st.n + '.' : '.'), opts: fault },
     { id: 'date', title: 'When was the accident?', sub: st ? st.n + ' allows ' + st.dl + ' years to claim.' : '' },
@@ -127,6 +129,8 @@ function questions() {
     { id: 'miles', title: 'Under 100,000 miles?', opts: [['Yes', 'y'], ['No', 'n']] },
     { id: 'prior', title: 'Any earlier accident?', sub: 'Before this one. We’ll verify the vehicle’s accident history.', opts: [['No', 'n'], ['Yes', 'y'], ['Not sure', 'u']] },
     { id: 'repair', title: 'Has it been repaired?', sub: 'We can start either way.', opts: [['Yes, repairs are done', 'done'], ['Being repaired now', 'now'], ['Not yet', 'not']] });
+  if (s.type === 'dv' || s.type === 'dvself') qs.push({ id: 'service', title: 'How do you want to handle the insurer?', sub: 'Full service: the $199 isn’t charged if the insurer’s offer doesn’t reach $498.',
+    opts: [['We handle it: $299 now, $199 when the offer comes in', 'full'], ['You handle it: $299, with our appraisal and a demand letter', 'self']] });
   qs.push({ id: 'vehicle' }, { id: 'summary' });
   return qs;
 }
@@ -160,7 +164,9 @@ function stopFor(id, v) {
   return '';
 }
 function answer(id, v, label) {
-  const s = S.setup; s.a[id] = v; s.labels = s.labels || {}; s.labels[id] = label || v;
+  const s = S.setup;
+  if (id === 'service') { s.type = v === 'self' ? 'dvself' : 'dv'; s.labels = s.labels || {}; s.labels.service = label; s.i++; s.dir = ''; return renderSetup(); }
+  s.a[id] = v; s.labels = s.labels || {}; s.labels[id] = label || v;
   const stop = stopFor(id, v); if (stop) return stopScreen(stop);
   s.i++; s.dir = ''; renderSetup();
 }
@@ -213,12 +219,14 @@ function renderSetup() {
     if (v.vin && !v.year) decode();
     $('f').onsubmit = (e) => { e.preventDefault(); v.vin = $('vin').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); v.mileage = $('mi').value.replace(/[^\d]/g, '');
       if (v.vin.length !== 17) return toast('Enter the 17-character VIN.'); if (!v.year) return toast('We need a VIN we can read.'); if (!v.mileage) return toast('Enter the mileage.');
+      if (DVT[s.type] && parseInt(v.year, 10) < new Date().getFullYear() - 10) return stopScreen('age');
+      if (DVT[s.type] && Number(v.mileage) >= 100000) return stopScreen('miles');
       s.i++; renderSetup(); };
   } else if (q.id === 'summary') {
     const st = zipState(s.zip), L = s.labels || {}, a = S.account || {};
     const rows = [['Name', a.name], ['Email', a.email], ['Phone', a.phone], ['Vehicle', s.vehicle.desc], ['VIN', s.vehicle.vin], ['Mileage', Number(s.vehicle.mileage).toLocaleString('en-US')]]
-      .concat([['zip', 'Car kept in'], ['fault', 'At fault'], ['date', 'Accident date'], ['age', '10 years or newer'], ['miles', 'Under 100,000 miles'], ['prior', 'Earlier accident'], ['repair', 'Repairs']].filter((x) => L[x[0]]).map((x) => [x[1], L[x[0]]]));
-    const name = s.type === 'ncdv' ? 'NC diminished value appraisal' : s.type === 'dv' ? 'Diminished value claim' : (L.type || '') + ' appraisal';
+      .concat([['service', 'Service'], ['zip', 'Car kept in'], ['fault', 'At fault'], ['date', 'Accident date'], ['age', '10 years or newer'], ['miles', 'Under 100,000 miles'], ['prior', 'Earlier accident'], ['repair', 'Repairs']].filter((x) => L[x[0]]).map((x) => [x[1], L[x[0]]]));
+    const name = s.type === 'ncdv' ? 'NC diminished value appraisal' : s.type === 'dv' ? 'Diminished value · full service' : s.type === 'dvself' ? 'Diminished value · self-service' : (L.type || '') + ' appraisal';
     wrap(`<p class="k">Check your details</p><h1 class="mid">${esc(name)}</h1><p class="ok small" style="margin:8px 0 0">Your claim qualifies.</p>
     <dl class="sum">${rows.map((r) => `<div><dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>
     ${st && st.ncAppraisal && DVT[s.type] ? '<p class="note mt-s">North Carolina: if the insurer’s offer comes in more than $2,000 under our value (or 25% of the car’s value, if that’s less), state law lets either side demand an appraisal. We’ll show you that option when the offer arrives.</p>' : ''}
@@ -227,7 +235,7 @@ function renderSetup() {
     $('ok').onclick = async () => {
       const b = $('ok'); busy(b, true); const keep = app.innerHTML; loading('Setting up your claim');
       try {
-        const j = await call('p2_setup', { setup: { type: s.type, zip: s.zip, answers: s.a, vehicle: s.vehicle } });
+        const j = await call('p2_setup', { setup: { type: s.type, zip: s.zip, answers: s.a, vehicle: s.vehicle, vr: s.vr || '' } });
         if (!j.ok) { if (j.reason === 'qualify') return stopScreen(j.why); renderSetup(); toast(j.message || 'Couldn’t save your claim. Try again.'); return; }
         S.files = j.files || S.files; S.setup = null; snap.save(); toast(j.existing ? 'This vehicle already has a file. Here it is.' : 'Your claim is set up.'); claim(j.fileId);
       } catch (e) { renderSetup(); toast('Couldn’t save your claim. Check your connection and try again.'); }
