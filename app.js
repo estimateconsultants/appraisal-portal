@@ -127,7 +127,7 @@ function startSetup(type) {
 function questions() {
   const s = S.setup, st = zipState(s.zip), dv = !!DVT[s.type];
   const fault = [['The other driver', 'other']].concat(st && st.um !== 'none' ? [['The other driver, and they had no insurance', 'unins']] : []).concat(st && st.um !== 'none' && UNDER_OK[st.code] ? [['The other driver, without enough insurance', 'under']] : []).concat([['Me', 'me'], ['Not decided yet', 'open']]);
-  const qs = [{ id: 'type' }, { id: 'zip', title: 'What ZIP code is the car kept in?', sub: 'Your state’s rules decide what’s available.' }, { id: 'vehicle' }];
+  const qs = [{ id: 'type' }, { id: 'zip', title: 'What’s your ZIP code?', sub: 'Your state’s rules decide what’s available.' }, { id: 'vehicle' }];
   if (dv) qs.push({ id: 'fault', title: 'Who was at fault?', sub: 'Diminished value is claimed from the at-fault driver’s insurer' + (st && st.um !== 'none' ? ', or your own uninsured motorist coverage in ' + st.n + '.' : '.'), opts: fault },
     { id: 'date', title: 'When was the accident?', sub: st ? st.n + ' allows ' + st.dl + ' years to claim.' : '' },
     { id: 'prior', title: 'Any earlier accident?', sub: 'Before this one. We’ll verify the vehicle’s accident history.', opts: [['No', 'n'], ['Yes', 'y'], ['Not sure', 'u']] },
@@ -140,7 +140,7 @@ function questions() {
 const STOP = {
   noCert: (st) => [st.n + ': certified appraisals unavailable', 'We can’t provide certified appraisals in ' + st.n + '.', true],
   noDV: (st) => ['Diminished value unavailable in ' + st.n, 'We don’t offer diminished value claims in ' + st.n + '.', true],
-  ncOnly: () => ['North Carolina only', 'This appraisal option is for vehicles kept in North Carolina. Choose “Diminished value” instead.', false],
+  ncOnly: () => ['North Carolina only', 'This appraisal option is for North Carolina residents. Choose “Diminished value” instead.', false],
   me: () => ['You were at fault', 'Diminished value is paid by the at-fault driver’s insurer, so there’s no claim when you were at fault.', false],
   open: () => ['Fault isn’t decided yet', 'Diminished value is claimed once the other driver is found at fault. Come back as soon as their insurer accepts fault.', false],
   late: (st) => ['Past the deadline', st.n + ' allows ' + st.dl + ' years from the accident for a property damage claim, and that time has passed.', false],
@@ -231,7 +231,7 @@ function renderSetup() {
   } else if (q.id === 'summary') {
     const st = zipState(s.zip), L = s.labels || {}, a = S.account || {};
     const rows = [['Name', a.name], ['Email', a.email], ['Phone', fmtPhone(a.phone)], ['Vehicle', s.vehicle.desc], ['VIN', s.vehicle.vin], ['Mileage', Number(s.vehicle.mileage).toLocaleString('en-US')]]
-      .concat([['service', 'Service'], ['zip', 'Car kept in'], ['fault', 'At fault'], ['date', 'Accident date'], ['prior', 'Earlier accident'], ['repair', 'Repairs']].filter((x) => L[x[0]]).map((x) => [x[1], L[x[0]]])).filter((r) => r[1]);
+      .concat([['service', 'Service'], ['zip', 'ZIP code'], ['fault', 'At fault'], ['date', 'Accident date'], ['prior', 'Earlier accident'], ['repair', 'Repairs']].filter((x) => L[x[0]]).map((x) => [x[1], L[x[0]]])).filter((r) => r[1]);
     const name = s.type === 'ncdv' ? 'North Carolina diminished value appraisal' : s.type === 'dv' ? 'Diminished value, full service' : s.type === 'dvself' ? 'Diminished value, self-service' : (L.type || '') + ' appraisal';
     wrap(`<h1 class="h">Check your details</h1><p class="lead"><span class="ok">Your claim qualifies</span> for a ${esc(name.charAt(0).toLowerCase() + name.slice(1)).replace(/^north carolina/, 'North Carolina')}.</p>
     <dl class="list sum mt">${rows.map((r) => `<div><dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>
