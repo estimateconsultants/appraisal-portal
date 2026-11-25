@@ -507,7 +507,7 @@ function heroHtml(f) {
   return `<div class="hero" id="hero"><div class="ph" id="ph"></div>
     <svg class="arcs" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor"><path d="M40 210a160 160 0 0 1 320 0" stroke-width="1"/><path d="M80 210a120 120 0 0 1 240 0" stroke-width="1"/><path d="M120 210a80 80 0 0 1 160 0" stroke-width="1"/></g></svg>
     <div class="hcap"><p class="meta">${esc(shortType(f.type))}, file ${esc(f.fileId)}</p><h1 class="plate">${esc(v.top)}</h1>${v.rest ? `<p class="meta trim">${esc(v.rest)}</p>` : ''}</div>
-    <a class="credit" id="phc" hidden target="_blank" rel="noopener"></a></div>`;
+    <span class="credit" id="phc" hidden></span></div>`;
 }
 // The header photo must show the same year, make and model. Wikimedia Commons files are named by year, make and model
 // ("2023 Dodge Charger SXT, front.jpg"), so a file named for this exact model year is used, or the year next to it.
@@ -551,7 +551,7 @@ async function carPhoto(f) {
   }
   if (!hit || !hit.src) return;
   const img = new Image(); img.onload = () => { const ph = $('ph'); if (!ph) return; ph.style.backgroundImage = 'url("' + hit.src + '")'; ph.classList.add('on'); $('hero').classList.add('hasph');
-    const c = $('phc'); if (c) { c.hidden = false; c.href = hit.page; c.textContent = 'Photo of the same model: Wikimedia Commons'; } };
+    const c = $('phc'); if (c) { c.hidden = false; c.textContent = 'Photo of the same model: Wikimedia Commons'; } };
   img.src = hit.src;
 }
 // ---------- "Setting up your claim": the gauge fills as a progress meter ----------
@@ -930,7 +930,7 @@ const reportErr = (msg, where) => { if (errN++ > 5) return; try { fetch(API, { m
 window.addEventListener('error', (e) => reportErr(e.message, (e.filename || '') + ':' + (e.lineno || '')));
 window.addEventListener('unhandledrejection', (e) => reportErr('promise: ' + ((e.reason && e.reason.message) || e.reason), location.pathname));
 // New version check: when we release, an open page offers a reload (and reloads itself on the claims list or a claim page).
-const APP_V = '27';
+const APP_V = '28';
 async function verCheck() {
   try { const j = await fetch('/version.json', { cache: 'no-store' }).then((r) => r.json()); if (!j || !j.v || j.v === APP_V || $('newv')) return;
     if (!S.setup && !document.querySelector('.sheet,.shotsheet') && !document.activeElement.matches('input,textarea,select')) return location.reload();
