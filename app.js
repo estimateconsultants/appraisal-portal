@@ -521,7 +521,8 @@ async function commonsCar(year, make, model) {
   const j = await fetch('https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=30&gsrsearch=' + encodeURIComponent('intitle:"' + year + ' ' + make + ' ' + model + '" filetype:bitmap') + '&prop=imageinfo&iiprop=url|size&iiurlwidth=1200').then((r) => r.json());
   const ok = Object.values((j.query || {}).pages || {}).sort((a, b) => a.index - b.index).filter((p) => {
     const t = p.title.replace(/^File:/, ''), tw = words(t), ii = (p.imageinfo || [])[0] || {};
-    return new RegExp('^' + year + '\\b').test(t) && mk.every((w) => tw.includes(w)) && md.every((w) => tw.includes(w)) &&
+    const rg = /^(\d{4})\s*[-–]\s*(\d{4})\b/.exec(t);   // "2020-2022 Ford F-250 ..." covers 2022
+    return (new RegExp('^' + year + '\\b').test(t) || (rg && +rg[1] <= year && year <= +rg[2])) && mk.every((w) => tw.includes(w)) && md.every((w) => tw.includes(w)) &&
       !/interior|engine|dash|badge|wheel|logo|seat|trunk|cargo|crash|wreck|damage|cutaway|chassis|concept/i.test(t) && ii.width > ii.height * 1.2 && ii.thumburl;
   });
   // a front or side view first; a rear view only if that's all there is
@@ -533,16 +534,18 @@ async function carPhoto(f) {
   const w = String(f.vehicle || '').split(/\s+/), year = parseInt(w[0], 10); if (!(year > 1900)) return;
   const two = TWO_WORD_MAKES.test((w[1] + ' ' + (w[2] || '')).replace(/-/g, ' ')), make = two ? w[1] + ' ' + w[2] : w[1], rest = w.slice(two ? 3 : 2);
   if (!make || !rest.length) return;
-  const key = 'ec_ph3_' + [year, make, rest.slice(0, 2).join(' ')].join(' ').toLowerCase();
+  const key = 'ec_ph4_' + [year, make, rest.slice(0, 2).join(' ')].join(' ').toLowerCase();
   let hit = null; try { hit = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) {}
   if (!hit) {
     try {
       const m1 = rest[0], m2 = rest.slice(0, 2).join(' '), tries = [];
       if (MODEL_ALIAS[m1.toLowerCase()]) tries.push(MODEL_ALIAS[m1.toLowerCase()]);
       if (rest.length > 2 && GENERIC_MODEL.test(m1)) tries.push(rest.slice(0, 3).join(' '));   // Range Rover Sport, Grand Cherokee L
-      if (rest.length > 1) tries.push(m2);
+      // two words only when that's the whole model name (Model X, Model 3), not a family name (Range Rover could be a Velar)
+      if (rest.length > 1 && (!GENERIC_MODEL.test(m1) || rest.length === 2 || rest[1].length <= 2)) tries.push(m2);
       if (!GENERIC_MODEL.test(m1) || rest.length === 1) tries.push(m1);
-      for (const y of [year, year + 1, year - 1]) { for (const m of tries) { hit = await commonsCar(y, make, m); if (hit) break; } if (hit) break; }
+      // the exact model year only: the year next to it can be a different generation (a 2023 Super Duty isn't a 2022)
+      for (const m of tries) { hit = await commonsCar(year, make, m); if (hit) break; }
       try { localStorage.setItem(key, JSON.stringify(hit || { none: 1 })); } catch (e) {}
     } catch (e) { return; }
   }
