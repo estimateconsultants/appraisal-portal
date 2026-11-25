@@ -205,3 +205,4 @@ button.li:hover,a.li:hover{background:var(--panel2)}
 /* readable with a larger phone text size; no sideways scroll */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}main{overflow-wrap:anywhere}
 .li{flex-wrap:wrap}.li .bd{min-width:12em}
+.viewbar{position:sticky;top:0;z-index:30;background:var(--red2);color:#0d1a12;font:600 14px var(--body);text-align:center;padding:10px 14px}

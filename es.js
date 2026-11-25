@@ -31,6 +31,7 @@
 
   // Whole text nodes
   const X = {
+    'Preview only. Nothing is saved or sent from here.': 'Solo vista previa. Aquí no se guarda ni se envía nada.',
     "Didn’t send. Check your signal.": "No se envió. Revise su señal.",
     "Still sending 1 photo. Keep this open a moment.": "Todavía se está enviando 1 foto. Mantenga esto abierto un momento.",
     "Finish later": "Terminar después",
@@ -277,6 +278,7 @@
   };
   // Pieces inside longer text (sentences joined together, or with names and numbers)
   const R = [
+    [/^Preview of what (.+) sees\. Nothing you click here is saved or sent\.$/, 'Vista previa de lo que ve $1. Nada de lo que toque aquí se guarda ni se envía.'],
     [/^State rules last checked (\w+) (\d{4})\. General information, not legal advice\.$/, (m, mo, y) => 'Reglas estatales revisadas por última vez en ' + ({ January: 'enero', February: 'febrero', March: 'marzo', April: 'abril', May: 'mayo', June: 'junio', July: 'julio', August: 'agosto', September: 'septiembre', October: 'octubre', November: 'noviembre', December: 'diciembre' }[mo] || mo) + ' de ' + y + '. Información general, no asesoría legal.'],
     [/^Still sending (\d+) photos\. Keep this open a moment\.$/, 'Todavía se están enviando $1 fotos. Mantenga esto abierto un momento.'], [/^(\d+) photos still to take$/, 'Faltan $1 fotos'], [/^1 photo still to take$/, 'Falta 1 foto'],
     [/^Still needed: (.+)\. You can come back and finish later\.$/, (m, a) => 'Faltan: ' + a.split(', ').map(tr).join(', ') + '. Puede volver y terminar después.'],

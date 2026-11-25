@@ -28,7 +28,7 @@ const store = { get(k) { try { return localStorage.getItem(k) || sessionStorage.
   del(k) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch (e) {} } };
 let S = { token: store.get('ec_tok'), account: null, files: [], email: '', setup: null };
 // Last known account and claims, so a returning client sees their claim instantly while the fresh copy loads.
-const snap = { save() { if (S.token) store.set('ec_snap', JSON.stringify({ a: S.account, f: S.files }), (() => { try { return !!localStorage.getItem('ec_tok'); } catch (e) { return false; } })()); },
+const snap = { save() { if (S.token && !VIEW) store.set('ec_snap', JSON.stringify({ a: S.account, f: S.files }), (() => { try { return !!localStorage.getItem('ec_tok'); } catch (e) { return false; } })()); },
   load() { try { const o = JSON.parse(store.get('ec_snap') || 'null'); if (o && o.a) { S.account = o.a; S.files = o.f || []; return true; } } catch (e) {} return false; } };
 // Wake the server as the page opens, so the first real request doesn't wait on a cold start.
 try { fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: '{"action":"p2_ping"}' }).catch(() => {}); } catch (e) {}
@@ -36,7 +36,10 @@ try { fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charse
 function loading(msg) { app.innerHTML = '<div class="loadr"><svg width="88" height="88" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 44a22 22 0 0 1 44 0" fill="none" stroke="#332c2f" stroke-width="6" stroke-linecap="round"/><path class="arc" d="M10 44a22 22 0 0 1 44 0" fill="none" stroke="#3ddc84" stroke-width="6" stroke-linecap="round"/><path class="ndl" d="M32 40 32 20" stroke="#fff" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="40" r="5" fill="#fff"/></svg><p>' + esc(msg || 'Loading') + '</p></div>'; }
 
 // ---------- server ----------
+const VIEW = (Q.get('view') || '').replace(/[^a-f0-9]/g, '');
 async function call(action, body) {
+  if (VIEW && !/^(p2_view|p2_doc|p2_upload_get|p2_rules_all|p2_err)$/.test(action)) { toast('Preview only. Nothing is saved or sent from here.'); throw new Error('preview'); }
+  if (VIEW) body = Object.assign({ view: VIEW }, body || {});
   const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action, token: S.token }, body || {})) });
   const j = await r.json();
   if (j && j.reason === 'session') { store.del('ec_tok'); S.token = null; signIn(); throw new Error('Please sign in again.'); }
@@ -849,6 +852,15 @@ function openFromHash() {
 }
 // ---------- start ----------
 (async function boot() {
+  if (VIEW) {   // staff preview of a client's claim page, read-only
+    loading('Opening the preview');
+    try { const j = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'p2_view', view: VIEW }) }).then((x) => x.json());
+      if (!j.ok) { app.innerHTML = '<p class="err" style="margin-top:80px">' + esc(j.message || 'This preview link expired.') + '</p>'; return; }
+      S.account = j.account; S.files = j.files || []; S.token = null;
+      const bar = document.createElement('div'); bar.className = 'viewbar'; bar.textContent = 'Preview of what ' + ((j.account && j.account.name) || 'the client') + ' sees. Nothing you click here is saved or sent.'; document.body.prepend(bar);
+      return claim(j.fileId);
+    } catch (e) { app.innerHTML = '<p class="err" style="margin-top:80px">Couldn’t open the preview. Check your connection and try again.</p>'; return; }
+  }
   const invId = Q.get('paid') ? '' : Q.get('inv');
   if (invId && /^[a-f0-9]{32}$/.test(invId)) {
     loading('Opening your claim');
@@ -890,7 +902,7 @@ const reportErr = (msg, where) => { if (errN++ > 5) return; try { fetch(API, { m
 window.addEventListener('error', (e) => reportErr(e.message, (e.filename || '') + ':' + (e.lineno || '')));
 window.addEventListener('unhandledrejection', (e) => reportErr('promise: ' + ((e.reason && e.reason.message) || e.reason), location.pathname));
 // New version check: when we release, an open page offers a reload (and reloads itself on the claims list or a claim page).
-const APP_V = '25';
+const APP_V = '26';
 async function verCheck() {
   try { const j = await fetch('/version.json', { cache: 'no-store' }).then((r) => r.json()); if (!j || !j.v || j.v === APP_V || $('newv')) return;
     if (!S.setup && !document.querySelector('.sheet,.shotsheet') && !document.activeElement.matches('input,textarea,select')) return location.reload();
