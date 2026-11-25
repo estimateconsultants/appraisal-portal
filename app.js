@@ -304,6 +304,7 @@ function renderSetup() {
     ${DVT[s.type] ? '<p class="note mt-s">Insurers often offer much less than the full diminished value at first. Getting the full amount can mean small claims court. We’ll give you our honest estimate of where it may settle once we’ve done the appraisal.</p>' : ''}
     ${DVT[s.type] && st && st.code === 'MD' && /unins|under/.test(s.a.fault || '') ? '<p class="note mt-s">Maryland: the state insurance department says uninsured and underinsured motorist coverage must pay diminished value, and insurers can’t exclude it (Bulletin 24-8, April 2024).</p>' : ''}
     ${accState() && accState().ncAppraisal && DVT[s.type] ? '<p class="note mt-s">North Carolina: if the other driver’s fault isn’t in dispute and their insurer’s number is more than $2,000 from ours (or 25% of the car’s value, if that’s less), state law lets either side demand an appraisal. Each side names a licensed appraiser; if they can’t agree, an umpire decides between the two numbers, and either side can reject that decision within 15 days. We’ll show you this option if the offer comes in that far apart.</p>' : ''}
+    ${DVT[s.type] && RULES_CHECKED ? `<p class="meta mt-s">State rules last checked ${esc(new Date(RULES_CHECKED + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }))}. General information, not legal advice.</p>` : ''}
     <div class="stack mt"><button class="btn red" type="button" id="ok">Set up my claim ${ARROW}</button><button class="btn ghost" type="button" id="ch">Change something</button></div><p class="err" id="er"></p>`);
     $('ch').onclick = () => { s.i = 1; s.dir = 'rev'; renderSetup(); };
     $('ok').onclick = async () => {
@@ -578,7 +579,13 @@ function photoTool(f, id, needId) {
           <input type="file" id="sh_${k}" data-k="${k}" accept="image/*" capture="environment" ${k === 'dmg' || k === 'mods' ? 'multiple' : ''} hidden></label>`; }).join('')}</div>
       <div class="shotfoot"><label class="btn ghost" for="shlib">Choose from your photos instead</label><input type="file" id="shlib" accept="image/*" multiple hidden>
       <button class="link mt-s" type="button" id="shkind">${isBike(f) ? 'Not a motorcycle? Show the car photo list' : 'Is it a motorcycle? Show the motorcycle photo list'}</button></div>`;
-    $('shx').onclick = close;
+    // Done: say what's still sending and which shots are still missing before leaving.
+    $('shx').onclick = async () => {
+      const sending = keys.filter((k) => local[k] === 'up').length, miss = keys.filter((k) => k !== 'dmg' && k !== 'mods' && !(shotDone(x, k) || local[k] === 'ok' || local[k] === 'up'));
+      if (sending) { toast(sending === 1 ? 'Still sending 1 photo. Keep this open a moment.' : 'Still sending ' + sending + ' photos. Keep this open a moment.', 5000); return; }
+      if (miss.length && !(await askChoice(miss.length === 1 ? '1 photo still to take' : miss.length + ' photos still to take', 'Still needed: ' + miss.map((k) => SHOTS[k][0]).join(', ') + '. You can come back and finish later.', 'Finish later'))) return;
+      close();
+    };
     $('shkind').onclick = () => { try { localStorage.setItem('ec_bike_' + f.fileId, isBike(f) ? '0' : '1'); } catch (e) {} m.remove(); document.body.style.overflow = ''; photoTool(f, id, needId); };
     m.querySelectorAll('input[data-k]').forEach((inp) => { inp.onchange = () => { const l = [...inp.files]; inp.value = ''; l.forEach((file, i) => sendShot(inp.dataset.k, file, i)); }; });
     $('shlib').onchange = () => { const l = [...$('shlib').files]; $('shlib').value = ''; const open = keys.filter((k) => !(shotDone(x, k) || local[k] === 'ok' || local[k] === 'up')); l.forEach((file, i) => sendShot(open[i] || 'dmg', file, i)); };
@@ -589,11 +596,16 @@ function photoTool(f, id, needId) {
       const url = URL.createObjectURL(file), img = await loadImg(url); const why = photoCheck(img);
       const data = shrink(img), hash = await sha256(Uint8Array.from(atob(data.slice(0, 4000)), (c) => c.charCodeAt(0)).buffer);
       const name = SHOTS[k][0] + (n ? ' ' + (n + 1) : '') + '.jpg';
-      const j = await call('p2_upload', { fileId: f.fileId, need: needId, name, mime: 'image/jpeg', data, hash: hash + k + n });
+      // Weak signal: try again in the background (after 3, 8 and 20 seconds, and when the phone is back online).
+      let j = null;
+      for (let t = 0; t < 4 && !j; t++) {
+        try { j = await call('p2_upload', { fileId: f.fileId, need: needId, name, mime: 'image/jpeg', data, hash: hash + k + n }); }
+        catch (e) { if (t === 3) throw e; if (!navigator.onLine) await new Promise((r) => window.addEventListener('online', r, { once: true })); else await new Promise((r) => setTimeout(r, [3000, 8000, 20000][t])); }
+      }
       if (!j.ok && !j.dup) throw new Error(j.message || 'Couldn’t send it.');
       if (j.files) { S.files = j.files; snap.save(); const nf = S.files.find((y) => y.fileId === f.fileId); const nx = nf && (nf.needs || []).find((y) => y.id === needId); if (nx) x.files = nx.files; }
       if (why) { local[k] = 'warn'; local['w_' + k] = why; } else local[k] = 'ok';
-    } catch (e) { local[k] = 'warn'; local['w_' + k] = 'Didn’t send.'; }
+    } catch (e) { local[k] = 'warn'; local['w_' + k] = 'Didn’t send. Check your signal.'; }
     draw();
   };
   draw();
@@ -862,8 +874,17 @@ function openFromHash() {
   } catch (e) { if (!had && S.token) app.innerHTML = '<p class="err" style="margin-top:80px">Couldn’t load your account. Check your connection and refresh.</p>'; }
 })();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+// The state rules come from one table on the server (the copy above is only a fallback while it loads).
+let RULES_CHECKED = '';
+(async () => { try { const j = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: '{"action":"p2_rules_all"}' }).then((r) => r.json());
+  if (j && j.ok && j.states && Object.keys(j.states).length > 40) { Object.keys(STATES).forEach((k) => { if (!j.states[k]) delete STATES[k]; }); Object.assign(STATES, j.states); Object.keys(UNDER_OK).forEach((k) => delete UNDER_OK[k]); Object.assign(UNDER_OK, j.underOk || {}); RULES_CHECKED = j.checked || ''; } } catch (e) {} })();
+// Errors on the client's screen are reported (no personal details: the message, the screen and the version).
+let errN = 0;
+const reportErr = (msg, where) => { if (errN++ > 5) return; try { fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'p2_err', msg: String(msg || '').slice(0, 300), where: String(where || '').replace(/[?#].*$/, '').slice(0, 120), v: APP_V, ua: navigator.userAgent.slice(0, 120) }) }).catch(() => {}); } catch (e) {} };
+window.addEventListener('error', (e) => reportErr(e.message, (e.filename || '') + ':' + (e.lineno || '')));
+window.addEventListener('unhandledrejection', (e) => reportErr('promise: ' + ((e.reason && e.reason.message) || e.reason), location.pathname));
 // New version check: when we release, an open page offers a reload (and reloads itself on the claims list or a claim page).
-const APP_V = '24';
+const APP_V = '25';
 async function verCheck() {
   try { const j = await fetch('/version.json', { cache: 'no-store' }).then((r) => r.json()); if (!j || !j.v || j.v === APP_V || $('newv')) return;
     if (!S.setup && !document.querySelector('.sheet,.shotsheet') && !document.activeElement.matches('input,textarea,select')) return location.reload();

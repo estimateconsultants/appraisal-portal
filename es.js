@@ -31,6 +31,9 @@
 
   // Whole text nodes
   const X = {
+    "Didn’t send. Check your signal.": "No se envió. Revise su señal.",
+    "Still sending 1 photo. Keep this open a moment.": "Todavía se está enviando 1 foto. Mantenga esto abierto un momento.",
+    "Finish later": "Terminar después",
     'Sign your agreement first, then you can pay here.': 'Primero firme su acuerdo y luego podrá pagar aquí.',
     "Create your free account": "Cree su cuenta gratis",
     "Your claim account": "Su cuenta de reclamo",
@@ -274,6 +277,9 @@
   };
   // Pieces inside longer text (sentences joined together, or with names and numbers)
   const R = [
+    [/^State rules last checked (\w+) (\d{4})\. General information, not legal advice\.$/, (m, mo, y) => 'Reglas estatales revisadas por última vez en ' + ({ January: 'enero', February: 'febrero', March: 'marzo', April: 'abril', May: 'mayo', June: 'junio', July: 'julio', August: 'agosto', September: 'septiembre', October: 'octubre', November: 'noviembre', December: 'diciembre' }[mo] || mo) + ' de ' + y + '. Información general, no asesoría legal.'],
+    [/^Still sending (\d+) photos\. Keep this open a moment\.$/, 'Todavía se están enviando $1 fotos. Mantenga esto abierto un momento.'], [/^(\d+) photos still to take$/, 'Faltan $1 fotos'], [/^1 photo still to take$/, 'Falta 1 foto'],
+    [/^Still needed: (.+)\. You can come back and finish later\.$/, (m, a) => 'Faltan: ' + a.split(', ').map(tr).join(', ') + '. Puede volver y terminar después.'],
     [/^Pay (\$[\d,.]+)$/, 'Pagar $1'],
     [/^Send us: (.+)$/, (m, a) => 'Envíenos: ' + tr(a)], [/^Send us (\d+) items$/, 'Envíenos $1 cosas'], [/^Please send this again: (.+)$/, (m, a) => 'Envíe esto de nuevo: ' + tr(a)],
     [/^Their final offer is (\$[\d,.]+)\. The numbers are side by side below\.$/, 'Su oferta final es de $1. Abajo verá las cifras una al lado de la otra.'],
