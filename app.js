@@ -66,7 +66,7 @@ function signIn(msg) {
     // Go straight to the code screen; the request finishes in the background (back to this screen if the address isn't accepted).
     S.email = em.toLowerCase(); codeStep();
     try {
-      const j = await call('p2_code_request', { email: em, lang: window.EC_LANG || 'en' });
+      const j = await call('p2_code_request', { email: em, lang: window.EC_LANG || 'en', linkOk: true });
       if (!j.ok) { signIn(); $('er').innerHTML = esc(j.message) + (j.suggest ? ` <a href="#" id="sg">Use ${esc(j.suggest)}</a>` : ''); if (j.suggest) $('sg').onclick = (ev) => { ev.preventDefault(); $('em').value = j.suggest; }; return; }
       S.email = j.email;
     } catch (err) { signIn('Couldn’t send the code. Check your connection and try again.'); }
@@ -95,7 +95,7 @@ function codeStep() {
   const again = $('again'); let left = 30, tm = 0;
   const cd = () => { if (!document.body.contains(again)) return clearInterval(tm); left--; again.disabled = left > 0; again.textContent = left > 0 ? 'Send a new code (' + left + 's)' : 'Send a new code'; if (left <= 0) clearInterval(tm); };
   again.disabled = true; again.textContent = 'Send a new code (30s)'; tm = setInterval(cd, 1000);
-  again.onclick = async (e) => { e.preventDefault(); if (left > 0) return; left = 31; tm = setInterval(cd, 1000); cd(); const j = await call('p2_code_request', { email: S.email, lang: window.EC_LANG || 'en' }).catch(() => null); toast(j && j.ok ? 'New code sent. Check your email.' : (j && j.message) || 'Couldn’t send it. Try again.'); };
+  again.onclick = async (e) => { e.preventDefault(); if (left > 0) return; left = 31; tm = setInterval(cd, 1000); cd(); const j = await call('p2_code_request', { email: S.email, lang: window.EC_LANG || 'en', linkOk: true }).catch(() => null); toast(j && j.ok ? 'New code sent. Check your email.' : (j && j.message) || 'Couldn’t send it. Try again.'); };
   $('chg').onclick = (e) => { e.preventDefault(); signIn(); };
   $('f').onsubmit = async (e) => {
     e.preventDefault(); if (val().length !== 6) { $('er').textContent = 'Enter all 6 digits.'; return; }
