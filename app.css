@@ -206,3 +206,55 @@ button.li:hover,a.li:hover{background:var(--panel2)}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}main{overflow-wrap:anywhere}
 .li{flex-wrap:wrap}.li .bd{min-width:12em}
 .viewbar{position:sticky;top:0;z-index:30;background:var(--red2);color:#0d1a12;font:600 14px var(--body);text-align:center;padding:10px 14px}
+
+/* progress: a car on a night road; its headlights light the step it's on now */
+.road{margin:18px 0 6px;padding:16px 16px 12px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,#0b0e0d,#121614)}
+.roadsvg{display:block;width:100%;height:auto;overflow:visible}
+.road .asph{fill:#1b201e}
+.road .lane{stroke:#3a443f;stroke-width:1.6;stroke-dasharray:10 9}
+.road .trail{stroke:var(--green);stroke-width:2.2;stroke-linecap:round;opacity:.55}
+.road .pin line{stroke:#3a443f;stroke-width:1.6}
+.road .pin circle{fill:#121614;stroke:#4a5550;stroke-width:1.6}
+.road .pin text{fill:var(--muted);font:600 9.5px var(--body);text-anchor:middle}
+.road .pin.done circle{fill:var(--green);stroke:var(--green)}
+.road .pin.done line{stroke:#3f6b4c}
+.road .pin .tick{fill:none;stroke:#0d1a12;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.road .pin.lit circle{fill:#fff4cf;stroke:#fff4cf;filter:drop-shadow(0 0 6px rgba(255,236,170,.75))}
+.road .pin.lit text{fill:#2a2412}
+.road .pin.lit line{stroke:#d8cfa6}
+.road .car .body{fill:#e9efe9}
+.road .car .glass{fill:#26302b}
+.road .car .tire{fill:#0b0e0d;stroke:#9aa69f;stroke-width:1.4}
+.road .car .lamp{fill:#fff6d8}
+.road .car .tail{fill:#ff7a6b}
+.road .car{animation:drive 1.3s cubic-bezier(.2,.7,.2,1) both}
+.road .beamg{animation:beamon .5s ease-out 1.15s both}
+@keyframes drive{from{transform:translate(var(--dx),0)}}
+.road .car{transform-box:view-box}
+@keyframes beamon{0%{opacity:0}40%{opacity:1}55%{opacity:.6}100%{opacity:1}}
+.roadtx{margin-top:4px}
+.roadnow{margin:2px 0;font:650 20px/1.25 var(--body);color:#fff}
+.roadall{margin-top:10px}
+@media (prefers-reduced-motion:reduce){.road .car,.road .beamg{animation:none}}
+
+/* example pictures of what we ask for */
+.exlink{display:block;margin-top:4px;font-size:14px;padding:0;text-align:left}
+.exbox{border-radius:12px;background:#0b0e0d;border:1px solid var(--line);padding:12px;display:flex;justify-content:center}
+.exsvg{width:100%;max-width:340px;height:auto;display:block}
+.eximg{width:100%;max-width:420px;height:auto;border-radius:8px;display:block}
+.exsvg .expaper{fill:#f3f5f2}.exsvg .expaper.back{fill:#d9ddd8}
+.exsvg .exhead{fill:#2f4a3a}
+.exsvg .ext{font:700 10.5px var(--body);fill:#1c2420;letter-spacing:.04em}
+.exsvg .exhead+.exhead+.ext,.exsvg .exhead ~ .ext{fill:#eef4ef}
+.exsvg .exl{font:500 7.5px var(--body);fill:#6b756f}
+.exsvg .exv{font:700 9px var(--body);fill:#1c2420}
+.exsvg .exhi rect{fill:rgba(127,214,154,.18);stroke:#2f9b57;stroke-width:1.6}
+.exsvg .exrule{stroke:#c9cec8;stroke-width:1}
+.exsvg .exlogo{fill:#c9d3cc}
+.exsvg .exln{fill:#d4d9d3}
+.exsvg .exph{fill:#dfe4de}.exsvg .exphc{fill:#b9c2bb}
+.exsvg .exwm{font:800 34px var(--body);fill:rgba(47,74,58,.10);letter-spacing:.12em}
+.exsvg .exsky{fill:#cfdcd4}.exsvg .exground{fill:#a9b8ae}
+.exsvg .excar{fill:#5d6b64}.exsvg .extire{fill:#1c2420}
+.exsvg .exfocus path{fill:none;stroke:#2f9b57;stroke-width:3;stroke-linecap:round}
+.exsvg .exdent{fill:none;stroke:#2f9b57;stroke-width:2;stroke-dasharray:3 3}
