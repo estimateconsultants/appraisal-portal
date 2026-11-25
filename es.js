@@ -31,6 +31,7 @@
 
   // Whole text nodes
   const X = {
+    'Photo of the same model: Wikimedia Commons': 'Foto del mismo modelo: Wikimedia Commons',
     'Preview only. Nothing is saved or sent from here.': 'Solo vista previa. Aquí no se guarda ni se envía nada.',
     "Didn’t send. Check your signal.": "No se envió. Revise su señal.",
     "Still sending 1 photo. Keep this open a moment.": "Todavía se está enviando 1 foto. Mantenga esto abierto un momento.",

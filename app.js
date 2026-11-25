@@ -509,21 +509,46 @@ function heroHtml(f) {
     <div class="hcap"><p class="meta">${esc(shortType(f.type))}, file ${esc(f.fileId)}</p><h1 class="plate">${esc(v.top)}</h1>${v.rest ? `<p class="meta trim">${esc(v.rest)}</p>` : ''}</div>
     <a class="credit" id="phc" hidden target="_blank" rel="noopener"></a></div>`;
 }
+// The header photo must show the same year, make and model. Wikimedia Commons files are named by year, make and model
+// ("2023 Dodge Charger SXT, front.jpg"), so a file named for this exact model year is used, or the year next to it.
+// If nothing matches, the header has no photo (never a different generation).
+const TWO_WORD_MAKES = /^(land rover|alfa romeo|aston martin|rolls royce|mercedes benz)$/i;
+const GENERIC_MODEL = /^(model|grand|range|santa|town|land|new|e|f|g|c|s|x)$/i;
+const MODEL_ALIAS = { 'f-250': 'F-250 Super Duty', 'f-350': 'F-350 Super Duty' };
+async function commonsCar(year, make, model) {
+  const words = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
+  const mk = words(make), md = words(model);
+  const j = await fetch('https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=30&gsrsearch=' + encodeURIComponent('intitle:"' + year + ' ' + make + ' ' + model + '" filetype:bitmap') + '&prop=imageinfo&iiprop=url|size&iiurlwidth=1200').then((r) => r.json());
+  const ok = Object.values((j.query || {}).pages || {}).sort((a, b) => a.index - b.index).filter((p) => {
+    const t = p.title.replace(/^File:/, ''), tw = words(t), ii = (p.imageinfo || [])[0] || {};
+    return new RegExp('^' + year + '\\b').test(t) && mk.every((w) => tw.includes(w)) && md.every((w) => tw.includes(w)) &&
+      !/interior|engine|dash|badge|wheel|logo|seat|trunk|cargo|crash|wreck|damage|cutaway|chassis|concept/i.test(t) && ii.width > ii.height * 1.2 && ii.thumburl;
+  });
+  // a front or side view first; a rear view only if that's all there is
+  const p = ok.find((x) => !/\b(rear|back|tail)\b/i.test(x.title)) || ok[0]; if (!p) return null;
+  const ii = p.imageinfo[0];
+  return { src: ii.thumburl, page: ii.descriptionurl || ('https://commons.wikimedia.org/wiki/' + encodeURIComponent(p.title.replace(/ /g, '_'))) };
+}
 async function carPhoto(f) {
-  const v = vehParts(f.vehicle).top, key = 'ec_ph_' + v.toLowerCase(); if (!v) return;
+  const w = String(f.vehicle || '').split(/\s+/), year = parseInt(w[0], 10); if (!(year > 1900)) return;
+  const two = TWO_WORD_MAKES.test((w[1] + ' ' + (w[2] || '')).replace(/-/g, ' ')), make = two ? w[1] + ' ' + w[2] : w[1], rest = w.slice(two ? 3 : 2);
+  if (!make || !rest.length) return;
+  const key = 'ec_ph3_' + [year, make, rest.slice(0, 2).join(' ')].join(' ').toLowerCase();
   let hit = null; try { hit = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) {}
   if (!hit) {
     try {
-      const q = encodeURIComponent(v.replace(/^\d{4}\s+/, '') + ' ' + (v.match(/^\d{4}/) || [''])[0]);
-      const j = await fetch('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=3&gsrsearch=' + q + '&prop=pageimages&piprop=thumbnail&pithumbsize=1000').then((r) => r.json());
-      const pages = Object.values((j.query || {}).pages || {}).sort((a, b) => a.index - b.index).filter((p) => p.thumbnail && p.thumbnail.width >= p.thumbnail.height);
-      if (pages[0]) hit = { src: pages[0].thumbnail.source, title: pages[0].title };
+      const m1 = rest[0], m2 = rest.slice(0, 2).join(' '), tries = [];
+      if (MODEL_ALIAS[m1.toLowerCase()]) tries.push(MODEL_ALIAS[m1.toLowerCase()]);
+      if (rest.length > 2 && GENERIC_MODEL.test(m1)) tries.push(rest.slice(0, 3).join(' '));   // Range Rover Sport, Grand Cherokee L
+      if (rest.length > 1) tries.push(m2);
+      if (!GENERIC_MODEL.test(m1) || rest.length === 1) tries.push(m1);
+      for (const y of [year, year + 1, year - 1]) { for (const m of tries) { hit = await commonsCar(y, make, m); if (hit) break; } if (hit) break; }
       try { localStorage.setItem(key, JSON.stringify(hit || { none: 1 })); } catch (e) {}
     } catch (e) { return; }
   }
   if (!hit || !hit.src) return;
   const img = new Image(); img.onload = () => { const ph = $('ph'); if (!ph) return; ph.style.backgroundImage = 'url("' + hit.src + '")'; ph.classList.add('on'); $('hero').classList.add('hasph');
-    const c = $('phc'); if (c) { c.hidden = false; c.href = 'https://en.wikipedia.org/wiki/' + encodeURIComponent(hit.title.replace(/ /g, '_')); c.textContent = 'Photo of a similar vehicle: Wikipedia'; } };
+    const c = $('phc'); if (c) { c.hidden = false; c.href = hit.page; c.textContent = 'Photo of the same model: Wikimedia Commons'; } };
   img.src = hit.src;
 }
 // ---------- "Setting up your claim": the gauge fills as a progress meter ----------
@@ -902,7 +927,7 @@ const reportErr = (msg, where) => { if (errN++ > 5) return; try { fetch(API, { m
 window.addEventListener('error', (e) => reportErr(e.message, (e.filename || '') + ':' + (e.lineno || '')));
 window.addEventListener('unhandledrejection', (e) => reportErr('promise: ' + ((e.reason && e.reason.message) || e.reason), location.pathname));
 // New version check: when we release, an open page offers a reload (and reloads itself on the claims list or a claim page).
-const APP_V = '26';
+const APP_V = '27';
 async function verCheck() {
   try { const j = await fetch('/version.json', { cache: 'no-store' }).then((r) => r.json()); if (!j || !j.v || j.v === APP_V || $('newv')) return;
     if (!S.setup && !document.querySelector('.sheet,.shotsheet') && !document.activeElement.matches('input,textarea,select')) return location.reload();
