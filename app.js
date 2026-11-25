@@ -376,6 +376,82 @@ function nextAction(f) {
   return { t: 'Nothing needed from you right now', d: s ? 'We’re working on it. Next: ' + esc(s.note || s.name) + '. We’ll email you when there’s something new.' : 'We’ll email you when there’s something new.', btn: '', calm: true };
 }
 const money = (n) => '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+// ---------- Progress: a car on a night road. Steps done are behind it; its headlights light up the step it's on now. ----------
+const CAR_PATH = 'M2 15.5c0-2.2 1.2-3.6 3.6-4.2l7.6-1.9 6.4-5.6c1-.9 2.3-1.3 3.6-1.3h12.6c1.5 0 2.9.6 3.9 1.7l4.6 5.1 6.3 1.2c2.2.4 3.4 1.9 3.4 4.1v3.2c0 .8-.6 1.4-1.4 1.4H3.4c-.8 0-1.4-.6-1.4-1.4z';
+function roadHtml(f) {
+  const steps = f.steps || []; if (steps.length < 2) return '';
+  const n = steps.length, cur = steps.findIndex((x) => !x.done), all = cur < 0, at = all ? n - 1 : cur;
+  const X0 = 74, X1 = 384, xs = steps.map((_, i) => X0 + i * (X1 - X0) / (n - 1));
+  const front = all ? 396 : Math.max(60, xs[at] - 16), left = front - 58, beamTo = all ? 0 : xs[at] + 26;
+  const pins = steps.map((x, i) => { const st = x.done ? 'done' : i === cur ? 'lit' : 'ahead';
+    return `<g class="pin ${st}" transform="translate(${xs[i].toFixed(1)} 0)"><line x1="0" y1="34" x2="0" y2="56"/><circle cx="0" cy="26" r="9"/>${x.done ? '<path d="M-4 26l3 3 5-6" class="tick"/>' : `<text x="0" y="29.5">${i + 1}</text>`}</g>`; }).join('');
+  const label = all ? 'All done' : esc(steps[at].name), sub = all ? 'Every step is finished.' : 'Step ' + (at + 1) + ' of ' + n + (steps[at].note ? ': ' + esc(steps[at].note) : '') + (steps[at].date ? ', ' + esc(steps[at].date) : '');
+  return `<section class="road" id="road" aria-label="Progress: ${all ? 'all steps done' : 'step ' + (at + 1) + ' of ' + n + ', ' + label}">
+  <svg class="roadsvg" viewBox="0 0 400 104" role="img" aria-hidden="true"><defs>
+    <linearGradient id="beam" x1="0" x2="1"><stop offset="0" stop-color="#fff6d8" stop-opacity=".85"/><stop offset=".55" stop-color="#fff1c4" stop-opacity=".28"/><stop offset="1" stop-color="#fff1c4" stop-opacity="0"/></linearGradient>
+    <radialGradient id="glow"><stop offset="0" stop-color="#fff3c9" stop-opacity=".7"/><stop offset="1" stop-color="#fff3c9" stop-opacity="0"/></radialGradient></defs>
+    <rect x="0" y="58" width="400" height="30" rx="3" class="asph"/>
+    <line x1="0" y1="73" x2="400" y2="73" class="lane"/>
+    <line x1="0" y1="${all ? 73 : 73}" x2="${left + 4}" y2="73" class="trail"/>
+    ${pins}
+    ${all ? '' : `<g class="beamg"><polygon points="${front - 2},64 ${beamTo},50 ${beamTo},88 ${front - 2},69" fill="url(#beam)"/><circle cx="${xs[at].toFixed(1)}" cy="26" r="19" fill="url(#glow)"/></g>`}
+    <g class="car" style="--dx:${-Math.min(left + 70, 220)}px" transform="translate(${left.toFixed(1)} 50)"><path d="${CAR_PATH}" class="body"/><path d="M21.5 5.2l-5 4.6h12.4V4.4h-5.1c-.9 0-1.7.3-2.3.8zM31.4 4.4v5.4h12.9l-3.7-4.2c-.6-.8-1.6-1.2-2.6-1.2z" class="glass"/><circle cx="14" cy="20" r="4.6" class="tire"/><circle cx="45" cy="20" r="4.6" class="tire"/><rect x="53.6" y="11.8" width="3.4" height="2.6" rx="1" class="lamp"/><rect x="1.4" y="12.2" width="2.2" height="2.4" rx=".8" class="tail"/></g>
+  </svg>
+  <div class="roadtx"><p class="meta">${all ? 'Your claim' : 'Where your claim is'}</p><p class="roadnow">${label}</p><p class="meta">${sub}</p></div>
+  <details class="fold roadall"><summary>All steps</summary><ol class="tl mt-s">${steps.map((x, i) => `<li class="${x.done ? 'done' : i === cur ? 'now' : 'next'}"><span class="dot">${x.done ? CHECK : ''}</span><div><div class="nm">${esc(x.name)}</div>${x.date || x.note ? `<div class="sub">${esc([x.note, x.date].filter(Boolean).join(', '))}</div>` : ''}</div></li>`).join('')}</ol></details></section>`;
+}
+
+// ---------- Example pictures for what we ask for: drawn here, marked EXAMPLE, with the parts we read outlined ----------
+const EXS = {
+  reg: { k: 'card', t: 'Vehicle registration', rows: [['Owner', 'JORDAN SAMPLE'], ['VIN', '1ABCD23E45F678901', 1], ['Plate', 'ABC-1234'], ['Year / make', '2021 SAMPLE SEDAN', 1], ['Expires', '06/30/2027']], tip: 'The front of the card is enough. Make sure the VIN and the year and make are sharp.' },
+  title: { k: 'doc', t: 'Certificate of title', rows: [['VIN', '1ABCD23E45F678901', 1], ['Year / make / model', '2021 SAMPLE SEDAN', 1], ['Owner', 'JORDAN SAMPLE', 1], ['Lienholder', 'SAMPLE BANK'], ['Odometer', '42,118'], ['Issued', '07/14/2021']], tip: 'Send the front and the back. All four corners in the picture.' },
+  odo: { k: 'img', img: 'odo', t: 'Odometer', tip: 'Car on, so the mileage shows. Get close enough that every digit is clear.' },
+  photos: { k: 'img', img: 'lf', t: 'Vehicle photos', tip: 'Step back so the whole car fits, one photo from each corner. Daylight is best.' },
+  before: { k: 'img', img: 'rf', t: 'Photos before the accident', tip: 'Any photos you have of the car before it was damaged: old phone photos, a listing, a trade-in appraisal.' },
+  damage: { k: 'photo', t: 'Damage photos', tip: 'One wide photo of the whole side, then close-ups of each damaged area. In good light, not at night.' },
+  repairedarea: { k: 'photo', t: 'Repaired area photos', tip: 'The areas that were repaired, after the work. Close enough to see paint and panel gaps, in good light.' },
+  repair: { k: 'doc', t: 'Repair invoice', shop: 1, rows: [['Shop', 'SAMPLE COLLISION CENTER', 1], ['RO date', '03/02/2026'], ['Labor: body', '$2,140.00'], ['Labor: paint', '$1,380.00'], ['Parts', '$3,612.40'], ['Paint supplies', '$588.00'], ['Total', '$7,720.40', 1]], tip: 'The final invoice from the shop, every page, with the total and the parts list. The estimate is not the same thing.' },
+  estimate: { k: 'doc', t: 'Repair estimate', shop: 1, rows: [['Written by', 'SAMPLE INSURANCE CO.', 1], ['Front bumper cover', 'Replace'], ['Hood', 'Repair 2.5 hr'], ['Headlamp assy, RT', 'Replace'], ['Frame setup', '1.0 hr'], ['Grand total', '$6,904.18', 1]], tip: 'Every page, including the supplements if there are any.' },
+  report: { k: 'stack', t: 'Total loss valuation', rows: [['Base vehicle value', '$24,310.00', 1], ['Condition adjustment', '-$410.00', 1], ['Adjusted vehicle value', '$23,900.00', 1], ['Comparable vehicles', '1 of 6'], ['Tax', '$1,434.00'], ['Deductible', '-$500.00']], tip: 'The full report from the insurer, every page, including the list of comparable cars. A screenshot of one page is not enough.' },
+  offer: { k: 'letter', t: 'Settlement offer', amt: '$23,900.00', tip: 'The letter or email where the insurer gives you the amount. A screenshot of the email is fine.' },
+  claimltr: { k: 'letter', t: 'Claim acknowledgment', claim: 1, tip: 'Any letter or email from the insurer that shows your claim number.' },
+  sticker: { k: 'doc', t: 'Window sticker', rows: [['Base price', '$31,200'], ['Premium package', '$2,450', 1], ['Navigation', '$895', 1], ['20" wheels', '$1,100', 1], ['Destination', '$1,095'], ['Total MSRP', '$36,740']], tip: 'The original sticker or a build sheet shows the options your car came with.' },
+  service: { k: 'doc', t: 'Service record', shop: 1, rows: [['Date', '01/18/2026', 1], ['Mileage in', '38,904', 1], ['Oil and filter', 'Done'], ['Tire rotation', 'Done'], ['Brake pads, front', 'Replaced']], tip: 'Receipts or a printout from the dealer. The date and mileage on each one matter most.' },
+  upgrades: { k: 'doc', t: 'Parts receipt', shop: 1, rows: [['Date', '09/02/2025'], ['Wheels (4)', '$1,960.00', 1], ['Tires (4)', '$1,120.00', 1], ['Installation', '$180.00'], ['Total paid', '$3,260.00', 1]], tip: 'A receipt for each part you added, with what it was and what you paid.' },
+  dec: { k: 'doc', t: 'Declarations page', rows: [['Policy period', '01/01/2026 - 07/01/2026'], ['Vehicle', '2021 SAMPLE SEDAN'], ['Collision', '$500 deductible', 1], ['Comprehensive', '$250 deductible'], ['Uninsured motorist PD', '$25,000', 1], ['Custom equipment', '$1,000', 1]], tip: 'The page of your policy that lists your coverages and deductibles. Your insurer’s app usually has it.' },
+  police: { k: 'doc', t: 'Crash report', rows: [['Report #', '2026-000123', 1], ['Date / time', '02/27/2026 5:40 PM'], ['Location', 'SAMPLE ST & MAIN ST'], ['Unit 1', '2021 SAMPLE SEDAN'], ['Unit 2', '2019 SAMPLE TRUCK'], ['Contributing factor', 'Unit 2: failed to yield', 1]], tip: 'The full report, every page. The report number and the officer’s notes matter most.' },
+  payoff: { k: 'letter', t: 'Loan payoff', amt: '$14,882.16', good: 1, tip: 'A payoff letter or a screenshot from your lender showing the payoff amount and the date it is good through.' },
+  license: { k: 'card', t: 'Driver license', id: 1, rows: [['Name', 'JORDAN SAMPLE', 1], ['Address', '100 SAMPLE ST'], ['Expires', '08/09/2029']], tip: 'The front only. You can cover the license number if you’d like; we only need your name.' },
+  estate: { k: 'doc', t: 'Letters of administration', rows: [['Estate of', 'ALEX SAMPLE', 1], ['File no.', '26 E 000123'], ['Personal representative', 'JORDAN SAMPLE', 1], ['Issued by', 'Clerk of Superior Court'], ['Date', '02/03/2026']], tip: 'The court paper that names who can act for the estate, every page.' },
+  donation: { k: 'doc', t: 'Donation receipt', rows: [['Charity', 'SAMPLE CHARITY'], ['Date of gift', '03/01/2026', 1], ['Vehicle', '2021 SAMPLE SEDAN, VIN 1ABCD23E45F678901', 1], ['Gross proceeds', '$4,100.00']], tip: 'The receipt or acknowledgment the charity gave you for the car.' }
+};
+function exSvg(e) {
+  const wide = e.k === 'card' || e.k === 'photo', W = wide ? '<text x="150" y="112" text-anchor="middle" class="exwm" transform="rotate(-18 150 100)">EXAMPLE</text>' : '<text x="120" y="160" text-anchor="middle" class="exwm" transform="rotate(-30 120 150)">EXAMPLE</text>';
+  const gap = e.k === 'card' ? 26 : 30;
+  const rowsSvg = (rows, y0, w, x0) => rows.map((r, i) => { const y = y0 + i * gap; return `<g${r[2] ? ' class="exhi"' : ''}>${r[2] ? `<rect x="${x0 - 6}" y="${y - 12}" width="${w + 12}" height="27" rx="5"/>` : ''}<text x="${x0}" y="${y}" class="exl">${esc(r[0])}</text><text x="${x0}" y="${y + 11}" class="exv">${esc(r[1])}</text></g>`; }).join('');
+  if (e.k === 'card') return `<svg viewBox="0 0 300 200" class="exsvg"><rect x="6" y="6" width="288" height="188" rx="14" class="expaper"/><rect x="6" y="6" width="288" height="30" rx="14" class="exhead"/><rect x="6" y="24" width="288" height="12" class="exhead"/><text x="20" y="26" class="ext">${esc(e.t.toUpperCase())}</text>${e.id ? '<rect x="20" y="52" width="62" height="78" rx="6" class="exph"/><circle cx="51" cy="80" r="13" class="exphc"/><path d="M30 126c3-16 12-22 21-22s18 6 21 22z" class="exphc"/>' : ''}${rowsSvg(e.rows, 56, e.id ? 180 : 250, e.id ? 98 : 22)}${W}</svg>`;
+  if (e.k === 'doc' || e.k === 'stack') { const back = e.k === 'stack' ? '<rect x="34" y="4" width="196" height="276" rx="6" class="expaper back"/><rect x="24" y="12" width="196" height="276" rx="6" class="expaper back"/>' : '';
+    return `<svg viewBox="0 0 240 300" class="exsvg">${back}<rect x="12" y="20" width="200" height="276" rx="6" class="expaper"/><text x="26" y="46" class="ext">${esc(e.t.toUpperCase())}</text>${e.shop ? '<rect x="150" y="32" width="48" height="16" rx="3" class="exlogo"/>' : ''}<line x1="26" y1="56" x2="198" y2="56" class="exrule"/>${rowsSvg(e.rows, 78, 170, 28)}${W}</svg>`; }
+  if (e.k === 'letter') return `<svg viewBox="0 0 240 300" class="exsvg"><rect x="20" y="10" width="200" height="280" rx="6" class="expaper"/><rect x="34" y="26" width="56" height="16" rx="3" class="exlogo"/><text x="34" y="66" class="ext">${esc(e.t.toUpperCase())}</text>
+    ${[80, 92, 104].map((y) => `<rect x="34" y="${y}" width="${y === 104 ? 110 : 168}" height="5" rx="2" class="exln"/>`).join('')}
+    ${e.claim ? '<g class="exhi"><rect x="28" y="120" width="180" height="30" rx="5"/><text x="34" y="132" class="exl">Claim number</text><text x="34" y="144" class="exv">0123456789-01</text></g>' : `<g class="exhi"><rect x="28" y="120" width="180" height="30" rx="5"/><text x="34" y="132" class="exl">${e.good ? 'Payoff amount' : 'Amount offered'}</text><text x="34" y="144" class="exv">${esc(e.amt)}</text></g>`}
+    ${e.good ? '<g class="exhi"><rect x="28" y="158" width="180" height="30" rx="5"/><text x="34" y="170" class="exl">Good through</text><text x="34" y="182" class="exv">04/15/2026</text></g>' : ''}
+    ${[e.good ? 202 : 166, e.good ? 214 : 178, e.good ? 226 : 190, e.good ? 238 : 202].map((y, i) => `<rect x="34" y="${y}" width="${i === 3 ? 90 : 168}" height="5" rx="2" class="exln"/>`).join('')}${W}</svg>`;
+  if (e.k === 'photo') return `<svg viewBox="0 0 300 200" class="exsvg"><rect x="6" y="6" width="288" height="188" rx="14" class="exsky"/><rect x="6" y="140" width="288" height="54" rx="0" class="exground"/>
+    <g transform="translate(58 70) scale(3.2)"><path d="${CAR_PATH}" class="excar"/><circle cx="14" cy="20" r="4.6" class="extire"/><circle cx="45" cy="20" r="4.6" class="extire"/></g>
+    <g class="exfocus"><path d="M196 74h-12v12M236 74h12v12M196 124h-12v-12M236 124h12v-12"/></g><circle cx="216" cy="98" r="9" class="exdent"/>${W}</svg>`;
+  return '';
+}
+function showExample(id) {
+  const e = EXS[id]; if (!e) return;
+  const m = document.createElement('div'); m.className = 'sheet';
+  const pic = e.k === 'img' ? `<img class="eximg" src="/guide/${e.img}.webp" alt="">` : exSvg(e);
+  m.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true" aria-labelledby="ext"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px"><h2 class="h2" id="ext" style="margin:0">${esc(e.t)}: what to send</h2><button class="link" type="button" data-x>Close</button></div>
+    <div class="exbox">${pic}</div><p class="upd" style="margin:12px 0 0">${esc(e.tip)}</p>${e.k === 'img' ? '' : '<p class="meta" style="margin:8px 0 0">The outlined parts are what we read. This is a made-up sample; yours will look different.</p>'}</div>`;
+  document.body.appendChild(m);
+  const close = () => m.remove(); m.querySelector('[data-x]').onclick = close; m.addEventListener('click', (ev) => { if (ev.target === m) close(); });
+  m.querySelector('[data-x]').focus();
+}
 function claim(id) {
   const hashItem = String(location.hash || '').split(':')[1] || '';
   const f = S.files.find((x) => x.fileId === id); if (!f) return home();
@@ -392,7 +468,8 @@ function claim(id) {
       : `<label class="upbtn" for="u_${esc(x.id)}">${got && !x.back ? 'Add more' : 'Upload'}</label><input type="file" id="u_${esc(x.id)}" data-need="${esc(x.id)}" accept="image/*,application/pdf" multiple hidden>`;
     const sub = shots ? `<span class="d${sd === sn ? ' ok' : ''}">${sd === sn ? 'All ' + sn + ' photos received' : sd + ' of ' + sn + ' photos. We’ll show you each one to take.'}</span>`
       : got ? `<span class="d${x.back ? '' : ' ok'}">${x.back ? 'Please send this again' : x.done ? 'Received and checked' : 'Received. We’ll check it.'}</span><span class="upfl">${x.files.map((y) => fileRow(x, y)).join('')}</span>` : (x.note ? `<span class="d">${esc(x.note)}</span>` : '');
-    return `<div class="li${x.back ? ' sentback' : ''}" id="n_${esc(x.id)}"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.name)}</span>${sub}<span class="d upst" hidden></span></span>${right}</div>`;
+    const ex = EXS[x.id] && !x.done && !shots ? `<button class="link exlink" type="button" data-ex="${esc(x.id)}">See an example</button>` : '';
+    return `<div class="li${x.back ? ' sentback' : ''}" id="n_${esc(x.id)}"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.name)}</span>${sub}${ex}<span class="d upst" hidden></span></span>${right}</div>`;
   };
   const showOffer = f.kind === 'dv' || f.kind === 'tl', invs = f.invoices || [], dueInv = invs.filter((x) => x.status === 'due'); const needSign = !!(f.agreement && !f.agreement.signed);
   const na = nextAction(f), allIn = !open && needs.length && needs.every((x) => x.done);
@@ -404,6 +481,7 @@ function claim(id) {
   const letters = lettersBlock(f);
   view(`<div><div class="backrow"><a href="#" id="hm" class="back">${BACK}Your claims</a></div>
   ${heroHtml(f)}
+  ${roadHtml(f)}
   <section class="nextcard${na.calm ? ' calm' : ''}" aria-labelledby="naT"><p class="meta">${na.calm ? 'Your claim' : 'Do this next'}</p><h2 class="h2" id="naT">${esc(na.t)}</h2><p class="upd">${na.d}</p>${na.btn ? '<div class="mt-s">' + na.btn + '</div>' : ''}</section>
   <nav class="tabs" aria-label="Sections"><a href="#todo" data-jump="todo">To do${open || needSign ? ' <b>' + (open + (needSign ? 1 : 0)) + '</b>' : ''}</a><a href="#docs" data-jump="docs">Documents</a>${invs.length ? `<a href="#pay" data-jump="pay">Payments${dueInv.length ? ' <b>' + dueInv.length + '</b>' : ''}</a>` : ''}<a href="#ups" data-jump="ups">Updates${ups.some((u) => (u.at || u.date) > seen) && seen ? ' <b>New</b>' : ''}</a></nav>
   <section class="sec" id="todo"><h2 class="h2">${open ? 'What we need from you' : 'Your files'} ${open ? `<span class="muted cnt2">${open} to go</span>` : ''}</h2>
@@ -426,8 +504,6 @@ function claim(id) {
   ${f.waived ? '<p class="meta ok" style="margin-top:12px">We waived the $199 second payment.</p>' : ''}
   ${f.final ? '' : '<p class="meta" style="margin-top:12px">General information, not legal advice.</p>'}</section>` : ''}
   <section class="sec" id="ups"><h2 class="h2">Updates</h2>${ups.length ? `<ol class="ups">${ups.map((u) => `<li id="u_${esc(u.id)}"${seen && (u.at || u.date) > seen ? ' class="new"' : ''}>${seen && (u.at || u.date) > seen ? '<span class="newtag">New</span>' : ''}<p class="upd">${esc(u.text)}</p><p class="meta">${esc(u.date || '')}</p></li>`).join('')}</ol>` : '<p class="meta" style="margin:0">No updates yet. We’ll post them here and email you each time.</p>'}</section>
-  ${steps.length ? `<section class="sec" id="prog"><h2 class="h2">Progress <span class="muted cnt2">${done} of ${steps.length} done</span></h2>
-  <ol class="tl">${steps.map((x, i) => `<li class="${x.done ? 'done' : i === cur ? 'now' : 'next'}"><span class="dot">${x.done ? CHECK : ''}</span><div><div class="nm">${esc(x.name)}</div>${x.date || x.note ? `<div class="sub">${esc([x.note, x.date].filter(Boolean).join(', '))}</div>` : ''}</div></li>`).join('')}</ol></section>` : ''}
   <section class="sec"><h2 class="h2">Need a hand?</h2>
   ${(f.issues || []).map((x) => `<p class="meta ok" style="margin:0 0 8px">We got your note from ${esc(x.at)}. We’ll email you as soon as it’s sorted out.</p>`).join('')}
   <p class="meta" style="margin:0 0 10px">A question, or something on this page that doesn’t look right? Send us a note and we’ll email you as soon as it’s sorted out.</p>
@@ -439,6 +515,7 @@ function claim(id) {
   if (hashItem) setTimeout(() => jump(hashItem.replace(/^(?!u_|n_|d_)(u\w+)$/, 'u_$1')), 300);
   $('iss').onclick = () => reportIssue(f, id);
   carPhoto(f);
+  app.querySelectorAll('[data-ex]').forEach((b) => { b.onclick = () => showExample(b.dataset.ex); });
   app.querySelectorAll('[data-shots]').forEach((b) => { b.onclick = () => photoTool(f, id, b.dataset.shots); });
   app.querySelectorAll('[data-letter]').forEach((b) => { b.onclick = () => openLetter(f, id, b.dataset.letter); });
   app.querySelectorAll('[data-saved]').forEach((b) => { b.onclick = () => getLetter(f, b, b.dataset.saved); });
@@ -930,7 +1007,7 @@ const reportErr = (msg, where) => { if (errN++ > 5) return; try { fetch(API, { m
 window.addEventListener('error', (e) => reportErr(e.message, (e.filename || '') + ':' + (e.lineno || '')));
 window.addEventListener('unhandledrejection', (e) => reportErr('promise: ' + ((e.reason && e.reason.message) || e.reason), location.pathname));
 // New version check: when we release, an open page offers a reload (and reloads itself on the claims list or a claim page).
-const APP_V = '28';
+const APP_V = '29';
 async function verCheck() {
   try { const j = await fetch('/version.json', { cache: 'no-store' }).then((r) => r.json()); if (!j || !j.v || j.v === APP_V || $('newv')) return;
     if (!S.setup && !document.querySelector('.sheet,.shotsheet') && !document.activeElement.matches('input,textarea,select')) return location.reload();
