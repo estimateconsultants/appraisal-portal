@@ -53,20 +53,20 @@ function zipState(z) { z = String(z || ''); if (!/^\d{5}$/.test(z)) return null;
 // ---------- sign in ----------
 function signIn(msg) {
   $('meBtn').hidden = true;
-  view(`<div class="top-gap" style="padding-top:56px"><h1 class="h">Sign in to your claim</h1>
-  <p class="lead">We’ll email you a 6-digit code. There’s no password to remember.</p>
+  view(`<div class="top-gap" style="padding-top:56px"><h1 class="h">${Q.get('vin') || Q.get('start') || Q.get('vehicle') ? 'Create your free account' : 'Your claim account'}</h1>
+  <p class="lead">New here? Enter your email to create a free account and set up your claim online. Already have one? Use the same email to sign in. We’ll email you a 6-digit code, so there’s no password to remember.</p>
   <form id="f" class="mt" novalidate><label class="f" for="em">Email</label>
-  <input class="in" id="em" type="email" autocomplete="email" inputmode="email" autofocus value="${esc(S.email || (S.inv && S.inv.email) || Q.get('email') || Q.get('s') || '')}">
+  <input class="in" id="em" type="email" autocomplete="email" inputmode="email" autofocus value="${esc(S.email || (S.inv && S.inv.email) || Q.get('email') || '')}">
   <p class="err" id="er">${esc(msg || '')}</p>
-  <button class="btn red mt-s" id="go" type="submit">Send my code ${ARROW}</button></form>
-  <p class="small muted mt">You don’t need the portal to work with us. You can also call or text <a href="tel:9103336001">910-333-6001</a>, or email <a href="mailto:customerservice@estimateconsultants.com">customerservice@estimateconsultants.com</a>.</p></div>`);
+  <button class="btn red mt-s" id="go" type="submit">Continue ${ARROW}</button></form>
+  <p class="small muted mt">Questions? Email <a href="mailto:customerservice@estimateconsultants.com">customerservice@estimateconsultants.com</a>.</p></div>`);
   $('f').onsubmit = async (e) => {
     e.preventDefault(); const b = $('go'), em = $('em').value.trim(); $('er').textContent = '';
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { $('er').textContent = 'Please check the email address.'; return; }
     // Go straight to the code screen; the request finishes in the background (back to this screen if the address isn't accepted).
     S.email = em.toLowerCase(); codeStep();
     try {
-      const j = await call('p2_code_request', { email: em });
+      const j = await call('p2_code_request', { email: em, lang: window.EC_LANG || 'en' });
       if (!j.ok) { signIn(); $('er').innerHTML = esc(j.message) + (j.suggest ? ` <a href="#" id="sg">Use ${esc(j.suggest)}</a>` : ''); if (j.suggest) $('sg').onclick = (ev) => { ev.preventDefault(); $('em').value = j.suggest; }; return; }
       S.email = j.email;
     } catch (err) { signIn('Couldn’t send the code. Check your connection and try again.'); }
@@ -74,7 +74,7 @@ function signIn(msg) {
 }
 function codeStep() {
   view(`<div class="swipe top-gap" style="padding-top:56px"><h1 class="h">Check your email</h1>
-  <p class="lead">Enter the code we sent to <b style="color:#fff;font-weight:600">${esc(S.email)}</b>. It can take a minute to arrive.</p>
+  <p class="lead">Enter the 6-digit code we sent to <b style="color:#fff;font-weight:600">${esc(S.email)}</b>, or tap the sign-in button in that email. It can take a minute to arrive.</p>
   <form id="f" class="mt" novalidate><div class="code" id="cd">${[0,1,2,3,4,5].map((i) => `<input inputmode="numeric" autocomplete="${i ? 'off' : 'one-time-code'}" maxlength="${i ? 1 : 6}" aria-label="Digit ${i + 1}"${i ? '' : ' autofocus'}>`).join('')}</div>
   <label class="check mt-s"><input type="checkbox" id="rm" checked>Keep me signed in on this device for 30 days</label>
   <p class="err" id="er"></p>
@@ -91,7 +91,11 @@ function codeStep() {
     });
     x.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && !x.value && ins[i - 1]) ins[i - 1].focus(); });
   });
-  $('again').onclick = async (e) => { e.preventDefault(); const j = await call('p2_code_request', { email: S.email }).catch(() => null); toast(j && j.ok ? 'New code sent.' : (j && j.message) || 'Couldn’t send it. Try again.'); };
+  // "Send a new code" waits 30 seconds between sends, with the time left showing.
+  const again = $('again'); let left = 30, tm = 0;
+  const cd = () => { if (!document.body.contains(again)) return clearInterval(tm); left--; again.disabled = left > 0; again.textContent = left > 0 ? 'Send a new code (' + left + 's)' : 'Send a new code'; if (left <= 0) clearInterval(tm); };
+  again.disabled = true; again.textContent = 'Send a new code (30s)'; tm = setInterval(cd, 1000);
+  again.onclick = async (e) => { e.preventDefault(); if (left > 0) return; left = 31; tm = setInterval(cd, 1000); cd(); const j = await call('p2_code_request', { email: S.email, lang: window.EC_LANG || 'en' }).catch(() => null); toast(j && j.ok ? 'New code sent. Check your email.' : (j && j.message) || 'Couldn’t send it. Try again.'); };
   $('chg').onclick = (e) => { e.preventDefault(); signIn(); };
   $('f').onsubmit = async (e) => {
     e.preventDefault(); if (val().length !== 6) { $('er').textContent = 'Enter all 6 digits.'; return; }
@@ -110,6 +114,7 @@ function afterSignIn() {
   // Invited from the app: start the setup with what we already have, once.
   if (S.inv && !S.invUsed) { S.invUsed = 1; history.replaceState(null, '', location.pathname); return startSetup(S.inv.type || '', S.inv); }
   if (Q.get('vin') || Q.get('vehicle') || Q.get('start')) { const t = Q.get('start') || (Q.get('vr') ? 'tl' : ''); history.replaceState(null, '', location.pathname); return startSetup(t || ''); }
+  const saved = setupSave.get(); if (saved && saved.i > 0) { S.setup = Object.assign(saved, { dir: '', zipShown: 1, accShown: 1, vehShown: 1 }); toast('Picking up where you left off.'); return renderSetup(); }
   if (!S.files.length) return startSetup('');
   home();
 }
@@ -141,7 +146,7 @@ function questions() {
   qs.push({ id: 'vehicle' });
   if (dv) qs.push({ id: 'fault', title: 'Who was at fault?', sub: 'Diminished value is claimed from the at-fault driver’s insurer' + (st && st.um !== 'none' ? ', or your own ' + (UNDER_OK[st.code] ? 'uninsured or underinsured' : 'uninsured') + ' motorist coverage in ' + st.n + '.' : '.'), opts: fault },
     { id: 'date', title: 'When was the accident?', sub: acc ? 'In ' + acc.n + ', you generally have ' + acc.dl + ' years from the accident to file suit if the claim isn’t resolved. The insurer may close the claim sooner, so it’s best to start early.' : '' },
-    { id: 'prior', title: 'Any earlier accident?', sub: 'Before this one. We’ll verify the vehicle’s accident history.', opts: [['No', 'n'], ['Yes', 'y'], ['Not sure', 'u']] },
+    { id: 'prior', title: 'Any earlier accident with structural damage?', sub: 'Before this one: damage to the frame, unibody or other structure. We’ll verify the vehicle’s accident history.', opts: [['No earlier accidents', 'n'], ['An earlier minor accident, no structural damage', 'minor'], ['Yes, an earlier accident with structural damage', 'y'], ['Not sure', 'u']] },
     { id: 'lease', title: 'Is the car leased?', sub: '', opts: [['No', 'n'], ['Yes, it’s leased', 'y']] },
     { id: 'repair', title: 'Has it been repaired?', sub: 'We can start either way.', opts: [['Yes, repairs are done', 'done'], ['Being repaired now', 'now'], ['Not yet', 'not']] });
   if (s.type === 'dv' || s.type === 'dvself') qs.push({ id: 'service', title: 'How do you want to handle the insurer?', sub: 'Full service: the $199 isn’t charged if the insurer’s offer doesn’t reach $498.',
@@ -159,14 +164,25 @@ const STOP = {
   late: (st) => ['Past the deadline', 'In ' + st.n + ', the general deadline to file suit for property damage is ' + st.dl + ' years from the accident, and that time has passed.', false],
   age: () => ['The car is over 10 years old', 'Our diminished value appraisals are for vehicles 10 model years old or newer.', false],
   miles: () => ['Over 100,000 miles', 'Our diminished value appraisals are for vehicles under 100,000 miles.', false],
-  prior: () => ['An earlier accident', 'Our diminished value appraisals are for vehicles with no accident before this one. We verify the accident history on every claim.', false]
+  prior: () => ['An earlier structural accident', 'Our diminished value appraisals are for vehicles with no earlier structural damage. We verify the accident history on every claim.', false],
+  exotic: () => ['An exotic or collector vehicle', 'Exotic and collector vehicles sell in a market of their own, so our diminished value appraisal isn’t the right fit. Our Classic or exotic appraisal values these vehicles.', false]
+};
+// What they can do instead, for each reason a claim doesn't qualify: [label, action].
+const ALT = {
+  noCert: [], noDV: [], ncOnly: [['Choose diminished value instead', () => { S.setup.type = 'dv'; S.setup.labels = { type: 'Diminished value' }; S.setup.i = 1; S.setup.dir = ''; renderSetup(); }]],
+  exotic: [['Start a Classic or exotic appraisal', () => startSetup('classic', { vin: S.setup.vehicle.vin, miles: S.setup.vehicle.mileage, vehicle: S.setup.vehicle.desc, zip: S.setup.zip })]],
+  partly: [['See our other appraisals', () => startSetup('')]], me: [['See our other appraisals', () => startSetup('')]], open: [['See our other appraisals', () => startSetup('')]],
+  late: [['See our other appraisals', () => startSetup('')]], age: [['See our other appraisals', () => startSetup('')]], miles: [['See our other appraisals', () => startSetup('')]], prior: [['See our other appraisals', () => startSetup('')]]
 };
 function stopScreen(code) {
   const st = (code === 'late' || code === 'partly' || (code === 'noDV' && accState() && accState().noDV) ? accState() : zipState(S.setup.zip)) || { n: '' }, x = (STOP[code] || (() => ['Not available', 'This claim doesn’t qualify. Call us and we’ll talk it through.', false]))(st);
   view(`<div class="swipe top-gap"><h1 class="h">${esc(x[0])}</h1><p class="lead">${esc(x[1])}${x[2] ? ' Our MarketTrue Valuation Reports are still available there: an instant, uncertified report you can use with the insurer.' : ''}</p>
-  <div class="stack mt">${x[2] ? `<a class="btn red" href="https://www.estimateconsultants.com/total-loss-valuation-report.html">Get a MarketTrue Valuation Report ${ARROW}</a>` : ''}
-  <a class="btn ${x[2] ? 'ghost' : 'red'}" href="tel:9103336001">Call 910-333-6001</a>
-  <button class="btn ghost" type="button" id="bk">Change an answer</button></div></div>`);
+  <h2 class="h2 mt">What you can do instead</h2>
+  <div class="stack">${x[2] ? `<a class="btn red" href="https://www.estimateconsultants.com/total-loss-valuation-report.html">Get a MarketTrue Valuation Report ${ARROW}</a>` : ''}
+  ${(ALT[code] || []).map((a, i) => `<button class="btn ${x[2] || i ? 'ghost' : 'red'}" type="button" data-alt="${i}">${esc(a[0])}${x[2] || i ? '' : ' ' + ARROW}</button>`).join('')}
+  <button class="btn ghost" type="button" id="bk">Change an answer</button></div>
+  <p class="small muted mt">Questions? Email <a href="mailto:customerservice@estimateconsultants.com">customerservice@estimateconsultants.com</a>.</p></div>`);
+  app.querySelectorAll('[data-alt]').forEach((b) => { b.onclick = () => ALT[code][+b.dataset.alt][1](); });
   $('bk').onclick = () => { S.setup.dir = 'rev'; renderSetup(); };
 }
 // Leased cars: the leasing company may own the diminished value claim. Not a stop, just a heads-up.
@@ -196,8 +212,13 @@ function answer(id, v, label) {
   if (id === 'lease' && v === 'y') return leaseNote();
   s.i++; s.dir = ''; renderSetup();
 }
+// Setup answers are saved on this device as they go, so a closed tab or lost signal doesn't restart the questions (7 days).
+const setupSave = { put() { try { if (S.setup && S.account) localStorage.setItem('ec_setup', JSON.stringify({ e: S.account.email, t: Date.now(), s: S.setup })); } catch (e) {} },
+  get() { try { const o = JSON.parse(localStorage.getItem('ec_setup') || 'null'); return o && S.account && o.e === S.account.email && Date.now() - o.t < 7 * 864e5 ? o.s : null; } catch (e) { return null; } },
+  del() { try { localStorage.removeItem('ec_setup'); } catch (e) {} } };
 function renderSetup() {
   const s = S.setup, qs = questions(); if (s.i >= qs.length) s.i = qs.length - 1;
+  if (s.i > 0) setupSave.put();
   const q = qs[s.i], n = qs.length, pos = s.i + 1;
   const bar = `<div class="backrow"><button class="back" type="button" id="bk">${BACK}Back</button><span class="cnt">${pos} of ${n}</span></div>`;
   const wrap = (inner) => view(bar + `<div class="swipe ${s.dir}" style="padding-top:14px">${inner}</div>`, false, Math.round(pos / n * 100));
@@ -229,7 +250,7 @@ function renderSetup() {
   } else if (q.id === 'date') {
     const today = new Date().toISOString().slice(0, 10);
     wrap(`<h1 class="h">${esc(q.title)}</h1><p class="lead">${esc(q.sub)}</p>
-    <form id="f" class="mt" novalidate><label class="f" for="dt">Date of the accident</label><input class="in" id="dt" type="date" max="${today}" value="${esc(s.a.date || '')}" autofocus style="color-scheme:dark">
+    <form id="f" class="mt" novalidate><label class="f" for="dt">Date of the accident</label><input class="in" id="dt" type="date" max="${today}" value="${esc(s.a.date || '')}" autofocus>
     <button class="btn red mt" type="submit">Continue ${ARROW}</button></form>`);
     $('f').onsubmit = (e) => { e.preventDefault(); const v = $('dt').value; if (!v || v > today) return toast('Pick the date of the accident.'); answer('date', v, v.slice(5, 7) + '/' + v.slice(8) + '/' + v.slice(0, 4)); };
   } else if (q.opts) {
@@ -243,6 +264,9 @@ function renderSetup() {
     <form id="f" class="mt stack" novalidate>
     <div><label class="f" for="vin">VIN <span class="muted">(17 characters, on the registration or driver’s door)</span></label><input class="in" id="vin" maxlength="17" autocapitalize="characters" value="${esc(v.vin)}" autofocus style="text-transform:uppercase;letter-spacing:.06em"></div>
     <p class="hint" id="vd" style="margin:-4px 0 0">${esc(v.desc ? v.desc : '')}</p>
+    ${'BarcodeDetector' in window ? '<div><label class="upbtn" for="vscan">Scan the VIN barcode</label><input type="file" id="vscan" accept="image/*" capture="environment" hidden><p class="hint" style="margin-top:6px">On the driver’s door frame or the registration.</p></div>' : ''}
+    <div id="vman" class="stack"${v.manual ? '' : ' hidden'}><p class="meta" style="margin:0">Enter the year, make and model instead. We’ll check the VIN by hand.</p>
+      <div class="grid3"><div><label class="f" for="vy">Year</label><input class="in" id="vy" inputmode="numeric" maxlength="4" value="${esc(v.manual ? v.year : '')}"></div><div><label class="f" for="vmk">Make</label><input class="in" id="vmk" value="${esc(v.manual ? v.make : '')}"></div><div><label class="f" for="vmd">Model</label><input class="in" id="vmd" value="${esc(v.manual ? v.model : '')}"></div></div></div>
     <div><label class="f" for="mi">Mileage</label><input class="in" id="mi" inputmode="numeric" value="${esc(v.mileage)}"></div>
     <button class="btn red" type="submit">Continue ${ARROW}</button></form>`);
     const decode = async () => {
@@ -251,14 +275,22 @@ function renderSetup() {
       $('vd').innerHTML = '<span class="sp" style="width:14px;height:14px;border-width:2px;vertical-align:-2px"></span> Looking it up…';
       try {
         const j = await fetch('https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvalues/' + vin + '?format=json').then((r) => r.json()), x = (j.Results || [])[0] || {};
-        if (x.ModelYear && x.Make) { Object.assign(v, { vin, year: x.ModelYear, make: titleCase(x.Make), model: x.Model || '', trim: x.Trim || '' }); v.desc = [v.year, v.make, v.model, v.trim].filter(Boolean).join(' '); $('vd').textContent = v.desc; $('vd').className = 'hint ok'; }
-        else { $('vd').textContent = 'We couldn’t read that VIN. Please check it.'; $('vd').className = 'hint'; }
-      } catch (e) { $('vd').textContent = ''; }
+        if (x.ModelYear && x.Make) { Object.assign(v, { vin, year: x.ModelYear, make: titleCase(x.Make), model: x.Model || '', trim: x.Trim || '', manual: false }); v.desc = [v.year, v.make, v.model, v.trim].filter(Boolean).join(' '); $('vd').textContent = v.desc; $('vd').className = 'hint ok'; }
+        else { $('vd').textContent = 'We couldn’t look up that VIN. Check it, or enter the year, make and model below.'; $('vd').className = 'hint'; $('vman').hidden = false; v.year = ''; }
+      } catch (e) { $('vd').textContent = 'The VIN lookup isn’t answering. Enter the year, make and model below.'; $('vman').hidden = false; }
     };
+    if ($('vscan')) $('vscan').onchange = async () => { const fl = $('vscan').files[0]; $('vscan').value = ''; if (!fl) return;
+      try { const bmp = await createImageBitmap(fl), codes = await new window.BarcodeDetector({ formats: ['code_39', 'code_128', 'data_matrix', 'qr_code', 'pdf417'] }).detect(bmp);
+        const hit = codes.map((c) => String(c.rawValue || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^I(?=[A-HJ-NPR-Z0-9]{17}$)/, '')).find((x) => /^[A-HJ-NPR-Z0-9]{17}$/.test(x));
+        if (hit) { $('vin').value = hit; decode(); } else toast('We couldn’t read a VIN barcode in that photo. Type the VIN instead.'); } catch (e) { toast('We couldn’t read that photo. Type the VIN instead.'); } };
     $('vin').oninput = () => { if ($('vin').value.replace(/[^A-Za-z0-9]/g, '').length === 17) decode(); };
     if (v.vin && !v.year) decode();
     $('f').onsubmit = (e) => { e.preventDefault(); v.vin = $('vin').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); v.mileage = $('mi').value.replace(/[^\d]/g, '');
-      if (v.vin.length !== 17) return toast('Enter the 17-character VIN.'); if (!v.year) return toast('We need a VIN we can read.'); if (!v.mileage) return toast('Enter the mileage.');
+      if (v.vin.length !== 17) return toast('Enter the 17-character VIN.');
+      if (!v.year && !$('vman').hidden) { const y = $('vy').value.replace(/\D/g, ''), mk = $('vmk').value.trim(), md = $('vmd').value.trim();
+        if (!/^(19|20)\d\d$/.test(y) || !mk || !md) return toast('Enter the year, make and model.');
+        Object.assign(v, { year: y, make: titleCase(mk), model: md, trim: '', manual: true }); v.desc = [y, v.make, md].join(' '); }
+      if (!v.year) return toast('Check the VIN, or enter the year, make and model.'); if (!v.mileage) return toast('Enter the mileage.');
       const why = vehicleStop(); if (why) return stopScreen(why);
       s.i++; s.dir = ''; renderSetup(); };
   } else if (q.id === 'summary') {
@@ -268,6 +300,7 @@ function renderSetup() {
     const name = s.type === 'ncdv' ? 'North Carolina diminished value appraisal' : s.type === 'dv' ? 'Diminished value, full service' : s.type === 'dvself' ? 'Diminished value, self-service' : (L.type || '') + ' appraisal';
     wrap(`<h1 class="h">Check your details</h1><p class="lead"><span class="ok">Your claim qualifies</span> for a ${esc(name.charAt(0).toLowerCase() + name.slice(1)).replace(/^north carolina/, 'North Carolina')}.</p>
     <dl class="list sum mt">${rows.map((r) => `<div><dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>
+    ${priceHtml(s.type, !!s.vr)}
     ${DVT[s.type] ? '<p class="note mt-s">Insurers often offer much less than the full diminished value at first. Getting the full amount can mean small claims court. We’ll give you our honest estimate of where it may settle once we’ve done the appraisal.</p>' : ''}
     ${DVT[s.type] && st && st.code === 'MD' && /unins|under/.test(s.a.fault || '') ? '<p class="note mt-s">Maryland: the state insurance department says uninsured and underinsured motorist coverage must pay diminished value, and insurers can’t exclude it (Bulletin 24-8, April 2024).</p>' : ''}
     ${accState() && accState().ncAppraisal && DVT[s.type] ? '<p class="note mt-s">North Carolina: if the other driver’s fault isn’t in dispute and their insurer’s number is more than $2,000 from ours (or 25% of the car’s value, if that’s less), state law lets either side demand an appraisal. Each side names a licensed appraiser; if they can’t agree, an umpire decides between the two numbers, and either side can reject that decision within 15 days. We’ll show you this option if the offer comes in that far apart.</p>' : ''}
@@ -278,18 +311,30 @@ function renderSetup() {
       try {
         const j = await call('p2_setup', { setup: { type: s.type, zip: s.zip, answers: s.a, vehicle: s.vehicle, vr: s.vr || '', accState: DVT[s.type] ? accState().code : '', inv: s.inv || '' } });
         if (!j.ok) { pg.stop(); if (j.reason === 'qualify') return stopScreen(j.why); renderSetup(); toast(j.message || 'Couldn’t save your claim. Try again.'); return; }
-        await pg.done(); S.files = j.files || S.files; S.setup = null; snap.save(); toast(j.existing ? 'This vehicle already has a file. Here it is.' : 'Your claim is set up.'); claim(j.fileId);
+        await pg.done(); S.files = j.files || S.files; S.setup = null; setupSave.del(); S.justSetUp = true; snap.save(); toast(j.existing ? 'This vehicle already has a file. Here it is.' : 'Your claim is set up.'); claim(j.fileId);
       } catch (e) { pg.stop(); renderSetup(); toast('Couldn’t save your claim. Check your connection and try again.'); }
     };
   }
   $('bk').onclick = () => { if (s.i <= 0 || (s.i === 1 && !S.files.length && false)) return home(); s.i--; s.dir = 'rev'; if (s.i === 0) s.type = ''; renderSetup(); };
 }
-function vehicleStop() { const s = S.setup, v = s.vehicle; if (!DVT[s.type]) return ''; if (parseInt(v.year, 10) < new Date().getFullYear() - 10) return 'age'; if (Number(v.mileage) >= 100000) return 'miles'; return ''; }
+// Exotic, collector and hand-built vehicles: same list the server checks.
+const EXOTIC_MAKE = /^(ferrari|lamborghini|mclaren|rolls[- ]?royce|bentley|aston martin|bugatti|pagani|koenigsegg|lotus|maybach|rimac|spyker|noble|saleen|hennessey|ssc|morgan|de tomaso)$/i;
+const EXOTIC_WMI = /^(ZFF|ZHW|SBM|SCA|SCB|SCF|VF9|SCC|ZA9|WMX|SDE)/;
+const EXOTIC_MODEL = /\b(ford gt|viper|nsx|r8|lfa|carrera gt|918|911 (gt2|gt3)|gt3 rs|gt2 rs|sls|amg gt black|slr|corvette zr1|z06 \(?c8)/i;
+function isExotic(v) { return EXOTIC_MAKE.test(String(v.make || '').trim()) || EXOTIC_WMI.test(String(v.vin || '').toUpperCase()) || EXOTIC_MODEL.test([v.make, v.model, v.trim].join(' ')); }
+function vehicleStop() { const s = S.setup, v = s.vehicle; if (!DVT[s.type]) return ''; if (isExotic(v)) return 'exotic'; if (parseInt(v.year, 10) < new Date().getFullYear() - 10) return 'age'; if (Number(v.mileage) >= 100000) return 'miles'; return ''; }
+// The price of the chosen service, shown in full before the claim is set up (no surprises at the payment step).
+function priceHtml(type, credit) {
+  const P = { dv: [['Due when you sign', '$299'], ['When the insurer’s offer comes in', '+ $199']], dvself: [['Due when you sign', '$299']], ncdv: [['Due when you sign', '$199'], ['When the appraisal award is signed', '+ $199']],
+    tl: [['Due when you sign', '$299']], rv: [['Due when you sign', '$499']] }[type] || [['Due when you sign', '$299']];
+  const note = type === 'dv' ? 'The $199 isn’t charged if the insurer’s offer doesn’t reach $498.' : type === 'ncdv' ? 'The second $199 is due when the award is signed, whatever the amount.' : '';
+  return `<h2 class="h2 mt">Your price</h2><dl class="list sum price">${P.map((r) => `<div><dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>${note ? `<p class="meta" style="margin-top:8px">${esc(note)}</p>` : ''}${credit ? '<p class="meta ok" style="margin-top:6px">Your MarketTrue Valuation Report price is credited toward this.</p>' : ''}<p class="meta" style="margin-top:6px">You’ll sign the agreement and pay securely on your claim page.</p>`;
+}
 // Reads the VIN as soon as we have one (from a link or typed), so the vehicle screen can be skipped or filled in.
 async function decodeVin(v) {
   const vin = String(v.vin || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (vin.length !== 17) return false;
   try { const j = await fetch('https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvalues/' + vin + '?format=json').then((r) => r.json()), x = (j.Results || [])[0] || {};
-    if (x.ModelYear && x.Make) { Object.assign(v, { vin, year: x.ModelYear, make: titleCase(x.Make), model: x.Model || '', trim: x.Trim || '' }); v.desc = [v.year, v.make, v.model, v.trim].filter(Boolean).join(' '); return true; } } catch (e) {}
+    if (x.ModelYear && x.Make) { Object.assign(v, { vin, year: x.ModelYear, make: titleCase(x.Make), model: x.Model || '', trim: x.Trim || '', manual: false }); v.desc = [v.year, v.make, v.model, v.trim].filter(Boolean).join(' '); return true; } } catch (e) {}
   return false;
 }
 function fmtPhone(p) { const d = String(p || '').replace(/\D/g, '').replace(/^1(?=\d{10}$)/, ''); return d.length === 10 ? '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6) : String(p || ''); }
@@ -305,53 +350,83 @@ function home() {
 }
 function shortType(t) { t = String(t || ''); return /diminished/i.test(t) ? 'Diminished value' : /total loss/i.test(t) ? 'Total loss' : /estate|probate/i.test(t) ? 'Appraisal' : /bank/i.test(t) ? 'Bank & collateral' : /irs/i.test(t) ? 'IRS donation' : 'Appraisal'; }
 function nowStep(f) { const s = (f.steps || []).find((x) => !x.done); return s ? (s.note || s.name) : 'In progress'; }
+// Newest-first client updates; anything newer than the last visit is marked New.
+function seenKey(f) { return 'ec_seen_' + f.fileId; }
+function lastSeen(f) { try { return localStorage.getItem(seenKey(f)) || ''; } catch (e) { return ''; } }
+function markSeen(f) { const ups = f.updates || [], top = ups.map((u) => u.at || u.date || '').sort().pop() || String(ups.length); try { localStorage.setItem(seenKey(f), top); } catch (e) {} }
+// The one step the client should do now. Order matters: sign, pay, send what we need, decide on the offer.
+function nextAction(f) {
+  const needSign = !!(f.agreement && !f.agreement.signed), due = (f.invoices || []).filter((x) => x.status === 'due');
+  const needs = (f.needs || []).filter((x) => x.id !== 'other'), open = needs.filter((x) => !x.done && (!(x.files || []).length || x.back));
+  if (needSign) return { t: 'Sign your agreement', d: FULLSVC(f) ? 'It lets us work on your claim and speak to the insurer for you. It takes about a minute.' : 'It lets us start your appraisal. It takes about a minute.', btn: `<a class="btn red" href="${esc(f.agreement.url)}">Sign the agreement ${ARROW}</a>` };
+  if (due.length) { const x = due[0]; return { t: 'Make your payment', d: esc(x.desc) + ': ' + money(x.cents / 100) + '. Paid securely through Stripe.', btn: `<button class="btn red" type="button" data-pay="${esc(x.id)}">Pay ${money(x.cents / 100)} ${ARROW}</button>` }; }
+  if (open.length) { const b = open.find((x) => x.back); return { t: b ? 'Please send this again: ' + b.name : open.length === 1 ? 'Send us: ' + open[0].name : 'Send us ' + open.length + ' items', d: b ? esc(b.back) : esc(open.map((x) => x.name).join(', ')) + '. Photos or PDFs.', btn: `<a class="btn red" href="#todo" data-jump="todo">${b ? 'Send it again' : 'Upload now'} ${ARROW}</a>` }; }
+  if (f.final && !f.decision && (f.kind === 'dv' || f.kind === 'tl')) return { t: 'Decide on the insurer’s offer', d: 'Their final offer is ' + money(f.offer) + '. The numbers are side by side below.', btn: `<a class="btn red" href="#value" data-jump="value">See the offer ${ARROW}</a>` };
+  const s = (f.steps || []).find((x) => !x.done);
+  return { t: 'Nothing needed from you right now', d: s ? 'We’re working on it. Next: ' + esc(s.note || s.name) + '. We’ll email you when there’s something new.' : 'We’ll email you when there’s something new.', btn: '', calm: true };
+}
+const money = (n) => '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
 function claim(id) {
+  const hashItem = String(location.hash || '').split(':')[1] || '';
   const f = S.files.find((x) => x.fileId === id); if (!f) return home();
   history.replaceState(null, '', '#' + id);
-  const steps = f.steps || [], cur = steps.findIndex((x) => !x.done), ups = f.updates || [];
+  const steps = f.steps || [], cur = steps.findIndex((x) => !x.done), ups = (f.updates || []).slice().reverse(), seen = lastSeen(f);
   const needs = (f.needs || []).filter((x) => x.id !== 'other'), other = (f.needs || []).find((x) => x.id === 'other');
-  const open = needs.filter((x) => !x.done && !(x.files || []).length).length, done = steps.filter((x) => x.done).length;
-  const money = (n) => '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const open = needs.filter((x) => !x.done && (!(x.files || []).length || x.back)).length, done = steps.filter((x) => x.done).length;
+  const fileRow = (x, y) => `<span class="upf${y.back ? ' back' : ''}"><button class="link" type="button" data-view="${esc(y.k)}" ${y.k ? '' : 'disabled'}>${esc(y.name)}</button>${y.back ? '<span class="d">Sent back: ' + esc(y.back) + '</span>' : ''}${!x.done && y.k ? `<button class="link rm" type="button" data-rm="${esc(y.k)}" aria-label="Remove ${esc(y.name)}">Remove</button>` : ''}</span>`;
   const row = (x) => {
     const got = (x.files || []).length;
     const shots = isShotNeed(x), sd = shots ? shotsFor(f, x).filter((k) => shotDone(x, k)).length : 0, sn = shots ? shotsFor(f, x).length : 0;
     const right = x.done ? '<span class="tag ok">Checked</span>'
       : shots ? `<button class="upbtn" type="button" data-shots="${esc(x.id)}">${sd ? 'Continue' : 'Start'}</button>`
-      : `<label class="upbtn" for="u_${esc(x.id)}">${got ? 'Add more' : 'Upload'}</label><input type="file" id="u_${esc(x.id)}" data-need="${esc(x.id)}" accept="image/*,application/pdf" multiple hidden>`;
+      : `<label class="upbtn" for="u_${esc(x.id)}">${got && !x.back ? 'Add more' : 'Upload'}</label><input type="file" id="u_${esc(x.id)}" data-need="${esc(x.id)}" accept="image/*,application/pdf" multiple hidden>`;
     const sub = shots ? `<span class="d${sd === sn ? ' ok' : ''}">${sd === sn ? 'All ' + sn + ' photos received' : sd + ' of ' + sn + ' photos. We’ll show you each one to take.'}</span>`
-      : got ? `<span class="d ok">Received: ${x.files.map((y) => esc(y.name)).join(', ')}</span>` : (x.note ? `<span class="d">${esc(x.note)}</span>` : '');
-    return `<div class="li" id="n_${esc(x.id)}"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.name)}</span>${sub}<span class="d upst" hidden></span></span>${right}</div>`;
+      : got ? `<span class="d${x.back ? '' : ' ok'}">${x.back ? 'Please send this again' : x.done ? 'Received and checked' : 'Received. We’ll check it.'}</span><span class="upfl">${x.files.map((y) => fileRow(x, y)).join('')}</span>` : (x.note ? `<span class="d">${esc(x.note)}</span>` : '');
+    return `<div class="li${x.back ? ' sentback' : ''}" id="n_${esc(x.id)}"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.name)}</span>${sub}<span class="d upst" hidden></span></span>${right}</div>`;
   };
   const showOffer = f.kind === 'dv' || f.kind === 'tl', invs = f.invoices || [], dueInv = invs.filter((x) => x.status === 'due'); const needSign = !!(f.agreement && !f.agreement.signed);
+  const na = nextAction(f), allIn = !open && needs.length && needs.every((x) => x.done);
+  const estLabel = f.kind === 'tl' ? 'Estimated appraisal clause settlement' : 'Estimated settlement';
+  const offerNote = f.kind === 'tl' ? 'Before sales tax, title and tag fees, and before your deductible' : 'The insurer’s offer for your diminished value';
+  const estTxt = f.estimate ? money(f.estimate.low) + (f.estimate.high ? ' to ' + money(f.estimate.high) : '') : '';
+  const docRows = (f.agreement && f.agreement.signed ? `<div class="li"><span class="bd"><span class="nm" style="font-weight:600">Appraisal agreement</span><span class="d ok">Signed</span></span><span class="tag ok">Signed</span></div>` : '')
+    + (f.docs || []).map((x) => `<div class="li" id="d_${esc(x.id)}"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.name.replace(/\.pdf$/i, ''))}</span>${f.locked ? '<span class="d">Opens once your balance is paid</span>' : '<span class="d">Ready</span>'}</span>${f.locked ? '<span class="tag">Locked</span>' : `<button class="upbtn" type="button" data-doc="${esc(x.id)}">Open</button>`}</div>`).join('');
+  const letters = lettersBlock(f);
   view(`<div><div class="backrow"><a href="#" id="hm" class="back">${BACK}Your claims</a></div>
   ${heroHtml(f)}
-  ${f.agreement ? `<section class="sec"><h2 class="h2">Your agreement</h2><div class="list${f.agreement.signed ? '' : ' need'}"><div class="li"><span class="bd"><span class="nm" style="font-weight:600">Appraisal agreement</span>${FULLSVC(f) ? '<span class="d">This allows us to speak to the insurer about your claim.</span>' : ''}<span class="d${f.agreement.signed ? ' ok' : ''}">${f.agreement.signed ? 'Signed' : 'Ready for you to sign'}</span></span>${f.agreement.signed ? '<span class="tag ok">Signed</span>' : `<a class="btn red sm" href="${esc(f.agreement.url)}">Sign</a>`}</div></div></section>` : ''}
-  ${invs.length ? `<section class="sec"><h2 class="h2">Payments</h2><div class="list${dueInv.length ? ' need' : ''}">${invs.map((x) => `<div class="li"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.desc)}</span><span class="d${x.status === 'paid' ? ' ok' : ''}">${x.status === 'paid' ? 'Paid ' + esc(x.paidAt) : x.status === 'later' ? money(x.cents / 100) : x.status === 'waived' ? 'Waived' : money(x.cents / 100) + ' due'}${x.note ? ', ' + esc(x.note) : ''}</span></span>${x.status === 'due' && needSign ? `<button class="btn sm dim" type="button" disabled>Pay ${money(x.cents / 100)}</button>` : x.status === 'due' ? `<button class="btn red sm" type="button" data-pay="${esc(x.id)}">Pay ${money(x.cents / 100)}</button>` : x.status === 'later' ? '<button class="btn sm dim" type="button" disabled>Not yet due</button>' : x.status === 'waived' ? '<span class="tag ok">Waived</span>' : `<span class="tag ok">${money(x.cents / 100)}</span>`}</div>`).join('')}</div>
-  ${dueInv.length ? `<p class="meta" style="margin-top:10px">${needSign ? 'Sign your agreement above, then you can pay here.' : 'Paid securely through Stripe. Your card details never reach us.'}</p>` : ''}</section>` : ''}
-  ${`<section class="sec"><h2 class="h2">${open ? 'We need from you' : 'Your documents'} ${open ? `<span class="muted" style="font-weight:400">${open} to go</span>` : ''}</h2>
-  <div class="list${open ? ' need' : ''}">${needs.map(row).join('')}${row(other || { id: 'other', name: 'Anything else', note: 'Other photos or documents you want us to have' })}</div>
-  <p class="meta" style="margin-top:10px">Photos or PDFs. We’ll check each one and mark it when it’s good.</p></section>`}
-  ${(f.docs || []).length ? `<section class="sec"><h2 class="h2">Your finished documents</h2><div class="list">${f.docs.map((x) => `<div class="li"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.name.replace(/\.pdf$/i, ''))}</span>${f.locked ? '<span class="d">Available once your balance is paid</span>' : ''}</span>${f.locked ? '<span class="tag">Locked</span>' : `<button class="upbtn" type="button" data-doc="${esc(x.id)}">Download</button>`}</div>`).join('')}</div></section>` : ''}
-  ${f.kind === 'dv' ? `<section class="sec"><h2 class="h2">What to expect</h2>
-  ${f.estimate ? `<p class="meta" style="margin:0">Estimated settlement</p><p class="upd" style="font-size:22px;font-weight:600;margin-top:2px">${money(f.estimate.low)}${f.estimate.high ? ' to ' + money(f.estimate.high) : ''}</p>` : ''}
-  <p class="upd" style="margin-top:${f.estimate ? '10px' : '0'}">Insurers often start well below the full diminished value, and some offer very little unless there’s real pressure behind the claim. Getting the full amount can mean filing in small claims court against the at-fault driver.${f.nc ? ' In North Carolina, if you and the insurer are far enough apart, either side can demand an appraisal, which can settle it without court.' : ''} That choice is yours, and our appraisal is built to be used there.</p>
-  <p class="meta" style="margin-top:8px">General information, not legal advice.</p></section>` : ''}
-  ${showOffer && f.offer != null ? `<section class="sec"><h2 class="h2">The insurer’s offer</h2><p class="upd" style="font-size:22px;font-weight:600">${money(f.offer)}</p>${f.kind === 'tl' ? '<p class="meta" style="margin-top:2px">Before sales tax, title and tag fees</p>' : ''}
-  ${!f.final ? '<p class="meta" style="margin-top:4px">We’re still working with the insurer to get as close to our value as we can.</p>'
-    : f.decision ? `<p class="meta ${f.decision.choice === 'accept' ? 'ok' : ''}" style="margin-top:4px">${f.decision.choice === 'accept' ? 'You accepted this offer on ' + esc(f.decision.at) + '.' : 'You chose not to accept this offer on ' + esc(f.decision.at) + '.'} We’ll be in touch about next steps.</p>`
-    : `<p class="lead" style="margin-top:6px">This is the insurer’s final offer. We presented our appraisal and pushed for as close to our value as we could, and this is the most they’re willing to pay. Would you like to accept it?</p>
-       <div class="stack mt-s"><div class="grid2"><button class="btn ghost" type="button" id="acc">Accept the offer</button><button class="btn ghost" type="button" id="dec">Don’t accept</button></div></div>`}
+  <section class="nextcard${na.calm ? ' calm' : ''}" aria-labelledby="naT"><p class="meta">${na.calm ? 'Your claim' : 'Do this next'}</p><h2 class="h2" id="naT">${esc(na.t)}</h2><p class="upd">${na.d}</p>${na.btn ? '<div class="mt-s">' + na.btn + '</div>' : ''}</section>
+  <nav class="tabs" aria-label="Sections"><a href="#todo" data-jump="todo">To do${open || needSign ? ' <b>' + (open + (needSign ? 1 : 0)) + '</b>' : ''}</a><a href="#docs" data-jump="docs">Documents</a>${invs.length ? `<a href="#pay" data-jump="pay">Payments${dueInv.length ? ' <b>' + dueInv.length + '</b>' : ''}</a>` : ''}<a href="#ups" data-jump="ups">Updates${ups.some((u) => (u.at || u.date) > seen) && seen ? ' <b>New</b>' : ''}</a></nav>
+  <section class="sec" id="todo"><h2 class="h2">${open ? 'What we need from you' : 'Your files'} ${open ? `<span class="muted cnt2">${open} to go</span>` : ''}</h2>
+  ${needSign ? `<div class="list need" style="margin-bottom:12px"><div class="li"><span class="bd"><span class="nm" style="font-weight:600">Appraisal agreement</span>${FULLSVC(f) ? '<span class="d">This allows us to speak to the insurer about your claim.</span>' : ''}<span class="d">Ready for you to sign</span></span><a class="btn red sm" href="${esc(f.agreement.url)}">Sign</a></div></div>` : ''}
+  ${allIn ? `<details class="fold"><summary>All ${needs.length} items received and checked</summary><div class="list mt-s">${needs.map(row).join('')}</div></details><div class="list mt-s">${row(other || { id: 'other', name: 'Anything else', note: 'Other photos or documents you want us to have' })}</div>`
+    : `<div class="list${open ? ' need' : ''}">${needs.map(row).join('')}${row(other || { id: 'other', name: 'Anything else', note: 'Other photos or documents you want us to have' })}</div>`}
+  <p class="meta" style="margin-top:10px">Photos or PDFs. Tap a file’s name to open it. We’ll check each one and mark it when it’s good.</p></section>
+  ${invs.length ? `<section class="sec" id="pay"><h2 class="h2">Payments</h2><div class="list${dueInv.length ? ' need' : ''}">${invs.map((x) => `<div class="li"><span class="bd"><span class="nm" style="font-weight:600">${esc(x.desc)}</span><span class="d${x.status === 'paid' ? ' ok' : ''}">${x.status === 'paid' ? 'Paid ' + esc(x.paidAt) + ', ' + money(x.cents / 100) : x.status === 'later' ? money(x.cents / 100) + ', not yet due' : x.status === 'waived' ? 'Waived' : money(x.cents / 100) + ' due'}${x.note ? ', ' + esc(x.note) : ''}</span></span>${x.status === 'due' && needSign ? `<button class="btn sm dim" type="button" disabled>Pay ${money(x.cents / 100)}</button>` : x.status === 'due' ? `<button class="btn red sm" type="button" data-pay="${esc(x.id)}">Pay ${money(x.cents / 100)}</button>` : x.status === 'later' ? '<span class="tag">Later</span>' : x.status === 'waived' ? '<span class="tag ok">Waived</span>' : '<span class="tag ok">Paid</span>'}</div>`).join('')}</div>
+  ${dueInv.length ? `<p class="meta" style="margin-top:10px">${needSign ? 'Sign your agreement first, then you can pay here.' : 'Paid securely through Stripe. Your card details never reach us.'}</p>` : ''}</section>` : ''}
+  <section class="sec" id="docs"><h2 class="h2">Documents</h2>${docRows ? `<div class="list">${docRows}</div>` : '<p class="meta" style="margin:0">Your finished appraisal and other documents will be here. We’ll email you when one is ready.</p>'}${letters}</section>
+  ${showOffer && (f.estimate || f.offer != null || f.kind === 'dv') ? `<section class="sec" id="value"><h2 class="h2">${f.offer != null ? 'The numbers' : 'What to expect'}</h2>
+  ${f.estimate || f.offer != null || f.value ? `<div class="nums">${f.offer != null ? `<div><p class="meta">The insurer’s offer</p><p class="num">${money(f.offer)}</p><p class="meta">${offerNote}</p></div>` : ''}${f.value ? `<div><p class="meta">Our valuation</p><p class="num">${money(f.value)}</p></div>` : ''}${f.estimate ? `<div class="wide"><p class="meta">${estLabel}</p><p class="num">${estTxt}</p><p class="meta">Our estimate, not a promise</p></div>` : ''}</div>` : ''}
+  ${f.kind === 'dv' ? `<p class="upd" style="margin-top:14px">Insurers often start well below the full diminished value, and some offer very little unless there’s real pressure behind the claim. Getting the full amount can mean filing in small claims court against the at-fault driver.${f.nc ? ' In North Carolina, if you and the insurer are far enough apart, either side can demand an appraisal, which can settle it without court.' : ''} That choice is yours, and our appraisal is built to be used there.</p>` : ''}
+  ${f.kind === 'tl' && f.estimate ? '<p class="upd" style="margin-top:14px">Under the appraisal clause, each side names an appraiser and the two agree on the value, with an umpire if they can’t. This range is our estimate of where that may land for your car.</p>' : ''}
+  ${showOffer && f.offer != null ? (!f.final ? '<p class="meta" style="margin-top:12px">We’re still working with the insurer to get as close to our valuation as we can.</p>'
+    : f.decision ? `<p class="meta ${f.decision.choice === 'accept' ? 'ok' : ''}" style="margin-top:12px">${f.decision.choice === 'accept' ? 'You accepted this offer on ' + esc(f.decision.at) + '.' : 'You chose not to accept this offer on ' + esc(f.decision.at) + '.'} We’ll be in touch about next steps.</p>`
+    : `<p class="lead" style="margin-top:12px">This is the insurer’s final offer. We presented our appraisal and pushed for as close to our valuation as we could, and this is the most they’re willing to pay. Would you like to accept it?</p>
+       <div class="stack mt-s"><div class="grid2"><button class="btn ghost" type="button" id="acc">Accept the offer</button><button class="btn ghost" type="button" id="dec">Don’t accept</button></div></div>`) : ''}
   ${f.final ? optionsBlock(f) : ''}
-  ${f.waived ? '<p class="meta ok" style="margin-top:12px">We waived the $199 second payment.</p>' : ''}</section>` : ''}
-  ${steps.length ? `<section class="sec"><h2 class="h2">Progress <span class="muted" style="font-weight:400">${done} of ${steps.length} done</span></h2>
+  ${f.waived ? '<p class="meta ok" style="margin-top:12px">We waived the $199 second payment.</p>' : ''}
+  ${f.final ? '' : '<p class="meta" style="margin-top:12px">General information, not legal advice.</p>'}</section>` : ''}
+  <section class="sec" id="ups"><h2 class="h2">Updates</h2>${ups.length ? `<ol class="ups">${ups.map((u) => `<li id="u_${esc(u.id)}"${seen && (u.at || u.date) > seen ? ' class="new"' : ''}>${seen && (u.at || u.date) > seen ? '<span class="newtag">New</span>' : ''}<p class="upd">${esc(u.text)}</p><p class="meta">${esc(u.date || '')}</p></li>`).join('')}</ol>` : '<p class="meta" style="margin:0">No updates yet. We’ll post them here and email you each time.</p>'}</section>
+  ${steps.length ? `<section class="sec" id="prog"><h2 class="h2">Progress <span class="muted cnt2">${done} of ${steps.length} done</span></h2>
   <ol class="tl">${steps.map((x, i) => `<li class="${x.done ? 'done' : i === cur ? 'now' : 'next'}"><span class="dot">${x.done ? CHECK : ''}</span><div><div class="nm">${esc(x.name)}</div>${x.date || x.note ? `<div class="sub">${esc([x.note, x.date].filter(Boolean).join(', '))}</div>` : ''}</div></li>`).join('')}</ol></section>` : ''}
-  ${ups.length ? `<section class="sec"><h2 class="h2">Latest update</h2>${ups.slice(-1).map((u) => `<p class="upd">${esc(u.text)}</p><p class="meta" style="margin-top:6px">${esc(u.date || '')}</p>`).join('')}</section>` : ''}
-  ${lettersBlock(f)}
   <section class="sec"><h2 class="h2">Need a hand?</h2>
   ${(f.issues || []).map((x) => `<p class="meta ok" style="margin:0 0 8px">We got your note from ${esc(x.at)}. We’ll email you as soon as it’s sorted out.</p>`).join('')}
   <p class="meta" style="margin:0 0 10px">A question, or something on this page that doesn’t look right? Send us a note and we’ll email you as soon as it’s sorted out.</p>
   <button class="btn ghost sm" type="button" id="iss">Send us a note</button></section>
   <p class="small muted mt">Questions? Email <a href="mailto:customerservice@estimateconsultants.com">customerservice@estimateconsultants.com</a>.</p></div>`);
+  markSeen(f); homePrompt(f);
+  const jump = (k) => { const el = $(k) || document.getElementById(k); if (!el) return; el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1800); };
+  app.querySelectorAll('[data-jump]').forEach((a) => { a.onclick = (e) => { e.preventDefault(); jump(a.dataset.jump); }; });
+  if (hashItem) setTimeout(() => jump(hashItem.replace(/^(?!u_|n_|d_)(u\w+)$/, 'u_$1')), 300);
   $('iss').onclick = () => reportIssue(f, id);
   carPhoto(f);
   app.querySelectorAll('[data-shots]').forEach((b) => { b.onclick = () => photoTool(f, id, b.dataset.shots); });
@@ -359,20 +434,20 @@ function claim(id) {
   app.querySelectorAll('[data-saved]').forEach((b) => { b.onclick = () => getLetter(f, b, b.dataset.saved); });
   $('hm').onclick = (e) => { e.preventDefault(); history.replaceState(null, '', location.pathname); home(); };
   app.querySelectorAll('input[type=file][data-need]').forEach((inp) => { inp.onchange = () => { const list = [...inp.files]; inp.value = ''; if (list.length) uploadAll(f, inp.dataset.need, list); }; });
-  app.querySelectorAll('.upbtn').forEach((l) => { l.tabIndex = 0; l.setAttribute('role', 'button'); l.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $(l.htmlFor).click(); } }; });
+  app.querySelectorAll('.upbtn').forEach((l) => { if (l.tagName !== 'LABEL') return; l.tabIndex = 0; l.setAttribute('role', 'button'); l.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $(l.htmlFor).click(); } }; });
   app.querySelectorAll('[data-pay]').forEach((b) => { b.onclick = async () => {
     busy(b, true);
     try { const j = await call('p2_pay', { fileId: f.fileId, invId: b.dataset.pay, lang: window.EC_LANG || 'en', embedded: true }); if (j.paid) { S.files = j.files || S.files; snap.save(); return claim(id); }
-      if (j.ok && j.clientSecret && j.pk) { busy(b, false); return payHere(j.pk, j.clientSecret); }
+      if (j.ok && j.clientSecret && j.pk) { busy(b, false); return payHere(j.pk, j.clientSecret, f.fileId, b.dataset.pay); }
       if (!j.ok || !j.url) { busy(b, false); return toast(j.message || 'Payments aren’t available right now.'); } location.href = j.url; }
     catch (e) { busy(b, false); toast('Couldn’t open the payment page. Check your connection and try again.'); }
   }; });
-  app.querySelectorAll('[data-doc]').forEach((b) => { b.onclick = async () => {
-    const t = b.textContent; b.disabled = true; b.textContent = 'Opening…';
-    try { const j = await call('p2_doc', { fileId: f.fileId, docId: b.dataset.doc }); if (!j.ok) return toast(j.message || 'Couldn’t open that document.');
-      const bin = atob(j.data), u = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k);
-      const url = URL.createObjectURL(new Blob([u], { type: j.mime })), a = document.createElement('a'); a.href = url; a.download = j.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000);
-    } catch (e) { toast('Couldn’t open that document. Check your connection and try again.'); } finally { b.disabled = false; b.textContent = t; }
+  app.querySelectorAll('[data-doc]').forEach((b) => { b.onclick = () => viewFile(b, 'p2_doc', { fileId: f.fileId, docId: b.dataset.doc }); });
+  app.querySelectorAll('[data-view]').forEach((b) => { b.onclick = () => viewFile(b, 'p2_upload_get', { fileId: f.fileId, k: b.dataset.view }); });
+  app.querySelectorAll('[data-rm]').forEach((b) => { b.onclick = async () => {
+    if (!(await askChoice('Remove this file?', 'It will be taken off your claim. You can send a new one any time.', 'Yes, remove it'))) return;
+    try { const j = await call('p2_upload_del', { fileId: f.fileId, k: b.dataset.rm }); if (!j.ok) return toast(j.message || 'Couldn’t remove it.'); S.files = j.files || S.files; snap.save(); toast('Removed.'); claim(id); }
+    catch (e) { toast('Couldn’t remove it. Check your connection and try again.'); }
   }; });
   const decide = async (choice) => {
     const ok = await askChoice(choice === 'accept' ? 'Accept ' + money(f.offer) + '?' : 'Don’t accept ' + money(f.offer) + '?', choice === 'accept' ? 'We’ll note your choice and follow up with the next steps.' : 'We’ll get in touch about what you can do next.', choice === 'accept' ? 'Yes, accept it' : 'Yes, don’t accept');
@@ -382,6 +457,37 @@ function claim(id) {
   };
   if ($('acc')) $('acc').onclick = () => decide('accept');
   if ($('dec')) $('dec').onclick = () => decide('decline');
+}
+// Opens a finished document or an upload inside the page, with Download and Close.
+async function viewFile(btn, action, body) {
+  const t = btn.textContent; btn.disabled = true; btn.textContent = 'Opening…';
+  try {
+    const j = await call(action, body); if (!j.ok) return toast(j.message || 'Couldn’t open that file.');
+    const bin = atob(j.data), u = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k);
+    const url = URL.createObjectURL(new Blob([u], { type: j.mime })), img = /^image\//.test(j.mime), pdf = j.mime === 'application/pdf';
+    const m = document.createElement('div'); m.className = 'sheet viewer';
+    m.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true" aria-label="${esc(j.name)}"><div class="vhead"><b>${esc(j.name)}</b><button class="link" type="button" data-x>Close</button></div>
+      <div class="vbody">${img ? `<img src="${url}" alt="${esc(j.name)}">` : pdf ? `<iframe src="${url}#view=FitH" title="${esc(j.name)}"></iframe>` : '<p class="meta">This file can’t be shown here. Use Download.</p>'}</div>
+      <a class="btn red mt-s" href="${url}" download="${esc(j.name)}">Download</a></div>`;
+    document.body.appendChild(m);
+    const close = () => { m.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); document.removeEventListener('keydown', esc1); };
+    const esc1 = (e) => { if (e.key === 'Escape') close(); };
+    m.querySelector('[data-x]').onclick = close; m.onclick = (e) => { if (e.target === m) close(); }; document.addEventListener('keydown', esc1); m.querySelector('[data-x]').focus();
+  } catch (e) { toast('Couldn’t open that file. Check your connection and try again.'); } finally { btn.disabled = false; btn.textContent = t; }
+}
+// "Add to home screen", offered once after a claim is set up (Android shows the install prompt; iPhone gets the steps).
+let installEvt = null; window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; });
+function homePrompt(f) {
+  let shown = ''; try { shown = localStorage.getItem('ec_a2hs') || ''; } catch (e) {}
+  if (shown || !S.justSetUp || window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) return;
+  S.justSetUp = false; try { localStorage.setItem('ec_a2hs', '1'); } catch (e) {}
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  if (!installEvt && !ios) return;
+  const el = document.createElement('div'); el.className = 'a2hs';
+  el.innerHTML = `<p><b>Keep your claim one tap away.</b> ${installEvt ? 'Add it to your home screen.' : 'Tap Share, then “Add to Home Screen”.'}</p><div class="a2b">${installEvt ? '<button class="btn red sm" type="button" data-i>Add</button>' : ''}<button class="link" type="button" data-n>Not now</button></div>`;
+  document.body.appendChild(el);
+  el.querySelector('[data-n]').onclick = () => el.remove();
+  const i = el.querySelector('[data-i]'); if (i) i.onclick = async () => { el.remove(); try { installEvt.prompt(); await installEvt.userChoice; } catch (e) {} installEvt = null; };
 }
 
 // ---------- claim header: a photo of the same model (not their car), with the vehicle name over it ----------
@@ -527,18 +633,18 @@ function optionsBlock(f) {
   const c = String(f.acc || '').toUpperCase(), stt = STATES[c], list = (OPTS[c] || ['File in small claims court against the at-fault driver. Your state court’s website lists the limit.']).slice();
   if (stt) list.push('You generally have ' + stt.dl + ' years from the accident to file suit.');
   return `<div class="note mt"><p style="margin:0 0 8px;color:#fff;font-weight:600">If you don’t accept${stt ? ', your usual options in ' + esc(stt.n) + ' are' : ', your usual options are'}:</p><ul style="margin:0;padding-left:18px">${list.map((x) => `<li style="margin:4px 0">${esc(x)}</li>`).join('')}</ul>
-  <p style="margin:10px 0 0">We recommend talking with an attorney before you decide. Many offer a free first consultation. Our appraisal can be used in any of these.</p><p class="meta" style="margin:8px 0 0">General information, not legal advice.</p></div>`;
+  <p style="margin:10px 0 0">An attorney can help you weigh these before you decide, and many offer a free first consultation. Our appraisal can be used in any of these.</p><p class="meta" style="margin:8px 0 0">General information, not legal advice.</p></div>`;
 }
 // Who we speak to the insurer for (full service, NC appraisal, total loss); self-service clients handle the insurer themselves.
 function FULLSVC(f) { return !/self[- ]service/i.test(f.type || '') && (f.kind === 'dv' || f.kind === 'tl'); }
 // Stripe's payment form right on the page.
 function loadStripe() { return window.Stripe ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://js.stripe.com/v3/'; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
-async function payHere(pk, secret) {
+async function payHere(pk, secret, fileId, invId) {
   const m = document.createElement('div'); m.className = 'sheet paysheet';
   m.innerHTML = '<div class="sheetbox" role="dialog" aria-modal="true" aria-label="Payment"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h2 class="h2" style="margin:0">Payment</h2><button class="link" type="button" id="pclose">Close</button></div><div id="pform"><div class="boot" style="padding:40px 0"><span class="sp"></span></div></div><p class="meta" style="margin-top:10px">Paid securely through Stripe. Your card details never reach us.</p></div>';
   document.body.appendChild(m);
   let co = null; $('pclose').onclick = () => { try { co && co.destroy(); } catch (e) {} m.remove(); };
-  try { await loadStripe(); const stripe = window.Stripe(pk); co = await stripe.initEmbeddedCheckout({ fetchClientSecret: async () => secret }); $('pform').innerHTML = ''; co.mount('#pform'); }
+  try { await loadStripe(); const stripe = window.Stripe(pk); co = await stripe.initEmbeddedCheckout({ fetchClientSecret: async () => secret, onComplete: async () => { try { co && co.destroy(); } catch (e) {} m.remove(); if (fileId) paidBack(fileId, invId, ''); } }); $('pform').innerHTML = ''; co.mount('#pform'); }
   catch (e) { m.remove(); toast('Couldn’t load the payment form. Check your connection and try again.'); }
 }
 function askChoice(title, text, yes) {
@@ -709,9 +815,23 @@ $('meBtn').onclick = () => {
   $('cl').onclick = home; $('so').onclick = () => { store.del('ec_tok'); store.del('ec_snap'); S = { token: null, files: [], email: a.email }; signIn(); };
 };
 
+// Back from paying: confirm it, then show the claim with the receipt and the next step, documents unlocked.
+async function paidBack(fileId, invId, sid) {
+  loading('Confirming your payment');
+  try { const j = await call('p2_pay_check', { fileId, invId, s: sid }); history.replaceState(null, '', location.pathname + '#' + fileId);
+    if (j.files) { S.files = j.files; snap.save(); } else { const m = await call('p2_me'); if (m.ok) { S.account = m.account; S.files = m.files || []; snap.save(); } }
+    $('meBtn').hidden = false; claim(fileId); toast(j.paid ? 'Payment received. Thank you. Your receipt is under Payments.' : 'We’re still confirming your payment. It will show here shortly.', 6000);
+  } catch (e) { history.replaceState(null, '', location.pathname + '#' + fileId); afterSignIn(); toast('We’re still confirming your payment. It will show here shortly.', 6000); }
+}
+// Opens the claim (and item) named in the address, e.g. #EC-2026-0123:u3 from an update email.
+function openFromHash() {
+  const h = (location.hash || '').slice(1).split(':')[0];
+  if (h && S.files.some((f) => f.fileId === h) && (S.account || {}).name) { $('meBtn').hidden = false; const a = S.account; $('meBtn').textContent = (a.name || a.email || '?').split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase(); return claim(h); }
+  afterSignIn();
+}
 // ---------- start ----------
 (async function boot() {
-  const invId = Q.get('inv');
+  const invId = Q.get('paid') ? '' : Q.get('inv');
   if (invId && /^[a-f0-9]{32}$/.test(invId)) {
     loading('Opening your claim');
     try { const j = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'p2_invite', inv: invId }) }).then((x) => x.json());
@@ -719,22 +839,36 @@ $('meBtn').onclick = () => {
       else toast(j.message || 'This link has expired.', 7000);
     } catch (e) {}
   }
-  if (!S.token) return signIn();
-  const paidF = Q.get('paid'), paidI = Q.get('inv');
-  if (paidF && paidI) {
-    loading('Confirming your payment');
-    try { const j = await call('p2_pay_check', { fileId: paidF, invId: paidI, s: Q.get('s') || '' }); history.replaceState(null, '', location.pathname + '#' + paidF);
-      const m = await call('p2_me'); if (m.ok) { S.account = m.account; S.files = m.files || []; snap.save(); }
-      $('meBtn').hidden = false; claim(paidF); toast(j.paid ? 'Payment received. Thank you.' : 'We’re still confirming your payment. It will show here shortly.', 6000); return;
-    } catch (e) {}
+  // One-tap sign-in link from the code email.
+  const lk = Q.get('login');
+  if (lk && /^[a-f0-9]{32,64}$/.test(lk)) {
+    loading('Signing you in');
+    history.replaceState(null, '', location.pathname + location.hash);
+    try { const j = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'p2_code_verify', link: lk, remember: true }) }).then((x) => x.json());
+      if (j.ok) { S.email = j.email; S.token = j.token; store.set('ec_tok', j.token, true); S.account = j.account; S.files = j.files || []; snap.save(); return openFromHash(); }
+      S.email = ''; return signIn(j.message || 'That sign-in link expired. Please send a new code.');
+    } catch (e) { return signIn('Couldn’t sign you in. Check your connection and try again.'); }
   }
+  if (!S.token) return signIn();
+  const paidF = Q.get('paid'), paidI = Q.get('pinv') || Q.get('inv');
+  if (paidF && paidI) return paidBack(paidF, paidI, Q.get('s') || '');
   const had = snap.load();
-  if (had) afterSignIn(); else loading('Opening your claim');
+  if (had) openFromHash(); else loading('Opening your claim');
   try {
     const j = await call('p2_me'); if (!j.ok) return signIn();
     const changed = JSON.stringify([j.account, j.files]) !== JSON.stringify([S.account, S.files]);
     S.account = j.account; S.files = j.files || []; snap.save();
-    if (!had) afterSignIn(); else if (changed && !S.setup) { const open = (location.hash || '').slice(1); if (open && S.files.some((f) => f.fileId === open)) claim(open); else afterSignIn(); }
+    if (!had) openFromHash(); else if (changed && !S.setup) openFromHash();
   } catch (e) { if (!had && S.token) app.innerHTML = '<p class="err" style="margin-top:80px">Couldn’t load your account. Check your connection and refresh.</p>'; }
 })();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+// New version check: when we release, an open page offers a reload (and reloads itself on the claims list or a claim page).
+const APP_V = '24';
+async function verCheck() {
+  try { const j = await fetch('/version.json', { cache: 'no-store' }).then((r) => r.json()); if (!j || !j.v || j.v === APP_V || $('newv')) return;
+    if (!S.setup && !document.querySelector('.sheet,.shotsheet') && !document.activeElement.matches('input,textarea,select')) return location.reload();
+    const el = document.createElement('div'); el.className = 'a2hs'; el.id = 'newv'; el.innerHTML = '<p><b>A new version of this page is ready.</b></p><div class="a2b"><button class="btn red sm" type="button">Reload</button></div>';
+    document.body.appendChild(el); el.querySelector('button').onclick = () => location.reload();
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') verCheck(); }); setInterval(verCheck, 5 * 60e3);
