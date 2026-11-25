@@ -1,13 +1,13 @@
-const CACHE_NAME = 'ec-appraisal-portal-v23';
+const CACHE_NAME = 'ec-appraisal-portal-v27';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
   '/logo.png',
   '/photo-guide.png',
-  '/es.js?v=10',
-  '/app.js?v=21',
-  '/app.css?v=12'
+  '/es.js?v=15',
+  '/app.js?v=26',
+  '/app.css?v=15'
 ];
 
 self.addEventListener('install', (event) => {
@@ -35,7 +35,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET' || event.request.url.includes('script.google.com')) {
+  if (event.request.method !== 'GET' || event.request.url.includes('script.google.com') || event.request.url.includes('/version.json')) {
     return;
   }
 
