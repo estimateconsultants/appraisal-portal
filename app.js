@@ -48,7 +48,13 @@ function prog(p) { const i = document.querySelector('#prog i'); if (i) i.style.w
 function view(html, wide, p) { app.className = wide ? 'wide' : ''; prog(p); app.innerHTML = html; window.scrollTo(0, 0); const f = app.querySelector('[autofocus]'); if (f) setTimeout(() => f.focus(), 60); }
 // State of the accident (DV claims ask for it; otherwise the insured state).
 function accState() { const s = S.setup || {}, c = s.acc; return c && STATES[c] ? Object.assign({ code: c }, STATES[c]) : zipState(s.zip); }
-function zipState(z) { z = String(z || ''); if (!/^\d{5}$/.test(z)) return null; const n = parseInt(z.slice(0, 3), 10), h = ZIPR.find((r) => n >= r[0] && n <= r[1]); return h && STATES[h[2]] ? Object.assign({ code: h[2] }, STATES[h[2]]) : null; }
+// ZIP to state: the exact 5-digit lookup when we have it (a few 3-digit areas cross state lines), else the 3-digit table.
+const ZIPX = {};
+function zipState(z) { z = String(z || ''); if (!/^\d{5}$/.test(z)) return null; const x = ZIPX[z]; if (x && STATES[x]) return Object.assign({ code: x }, STATES[x]);
+  const n = parseInt(z.slice(0, 3), 10), h = ZIPR.find((r) => n >= r[0] && n <= r[1]); return h && STATES[h[2]] ? Object.assign({ code: h[2] }, STATES[h[2]]) : null; }
+async function zipExact(z) { if (!/^\d{5}$/.test(z) || ZIPX[z]) return; try { const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 2500);
+  const j = await fetch('https://api.zippopotam.us/us/' + z, { signal: ctl.signal }).then((r) => r.ok ? r.json() : null); clearTimeout(t);
+  const st = j && j.places && j.places[0] && j.places[0]['state abbreviation']; if (st && STATES[st]) ZIPX[z] = st; } catch (e) {} }
 
 // ---------- sign in ----------
 function signIn(msg) {
@@ -136,7 +142,7 @@ function startSetup(type, pre) {
   pre = pre || {};
   S.setup = { type: type || '', i: 0, a: {}, zip: zipState(pre.zip) ? pre.zip : '', preZip: !!zipState(pre.zip), acc: STATES[pre.acc] ? pre.acc : undefined, preAcc: !!STATES[pre.acc], inv: pre.id || '',
     vr: Q.get('vr') || '', vehicle: { vin: pre.vin || Q.get('vin') || '', mileage: String(pre.miles || Q.get('miles') || '').replace(/[^\d]/g, ''), desc: pre.vehicle || Q.get('vehicle') || '' }, dir: '' };
-  if (type) S.setup.i = 1; if (S.setup.vehicle.vin) decodeVin(S.setup.vehicle); renderSetup();
+  if (type) S.setup.i = 1; if (S.setup.vehicle.vin) decodeVin(S.setup.vehicle); if (S.setup.zip) zipExact(S.setup.zip); renderSetup();
 }
 function questions() {
   const s = S.setup, st = zipState(s.zip), dv = !!DVT[s.type], acc = accState();
@@ -239,8 +245,8 @@ function renderSetup() {
     <form id="f" class="mt" novalidate><label class="f" for="z">ZIP code</label><input class="in zip" id="z" inputmode="numeric" maxlength="5" autocomplete="postal-code" value="${esc(s.zip)}" autofocus>
     <p class="hint" id="zp"></p><button class="btn red mt" type="submit">Continue ${ARROW}</button></form>`);
     const show = () => { const st = zipState($('z').value); $('zp').textContent = st ? st.n : 'Enter the 5-digit ZIP code'; $('zp').className = 'hint' + (st ? ' ok' : ''); };
-    $('z').oninput = () => { $('z').value = $('z').value.replace(/\D/g, '').slice(0, 5); show(); }; show();
-    $('f').onsubmit = (e) => { e.preventDefault(); const st = zipState($('z').value); if (!st) return toast('Enter a valid 5-digit ZIP code.'); if (s.zip !== $('z').value) delete s.acc; s.zip = $('z').value; answer('zip', s.zip, s.zip + ', ' + st.n); };
+    $('z').oninput = () => { $('z').value = $('z').value.replace(/\D/g, '').slice(0, 5); show(); if ($('z').value.length === 5) zipExact($('z').value).then(() => { if ($('zp')) show(); }); }; show();
+    $('f').onsubmit = async (e) => { e.preventDefault(); await zipExact($('z').value); const st = zipState($('z').value); if (!st) return toast('Enter a valid 5-digit ZIP code.'); if (s.zip !== $('z').value) delete s.acc; s.zip = $('z').value; answer('zip', s.zip, s.zip + ', ' + st.n); };
   } else if (q.id === 'acc') {
     const cur = s.acc || (zipState(s.zip) || {}).code || '';
     wrap(`<h1 class="h">${esc(q.title)}</h1><p class="lead">${esc(q.sub)}</p>
