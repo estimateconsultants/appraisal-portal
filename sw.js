@@ -1,12 +1,12 @@
-const CACHE_NAME = 'ec-appraisal-portal-v31';
+const CACHE_NAME = 'ec-appraisal-portal-v32';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
   '/logo.png',
   '/photo-guide.png',
-  '/es.js?v=18',
-  '/app.js?v=30',
+  '/es.js?v=19',
+  '/app.js?v=31',
   '/app.css?v=16'
 ];
 
