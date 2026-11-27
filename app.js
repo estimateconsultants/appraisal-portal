@@ -154,7 +154,7 @@ function expectHtml(x) {
   const rg = settleRange(x.offer, x.value);
   return `<div class="nums mt"><div><p class="meta">The insurer’s value</p><p class="num">${money(x.offer)}</p><p class="meta">Before tax and fees</p></div><div><p class="meta">Our appraised value</p><p class="num">${money(x.value)}</p><p class="meta">MarketTrue Market Value</p></div>
   ${rg ? `<div class="wide"><p class="meta">Estimated appraisal clause settlement</p><p class="num">${money(rg.low)} to ${money(rg.high)}</p><p class="meta">Our estimate, not a promise</p></div>` : ''}</div>
-  ${rg ? '<p class="upd" style="margin-top:14px">Under the appraisal clause, each side names an appraiser and the two agree on the value, with an umpire if they can’t. These claims usually end up about 40% to 60% of the way from the insurer’s value to ours. A certified appraisal confirms our value after we review your car’s condition and history.</p>'
+  ${rg ? '<p class="upd" style="margin-top:14px">Under the appraisal clause, each side names an appraiser and the two agree on the value, with an umpire if they can’t. These claims usually end up about 40% to 60% of the way from the insurer’s value to ours.</p><p class="upd" style="margin-top:10px">This is our value for a car with a clean title, no earlier accidents or damage, and normal wear. The certified appraisal can come out higher or lower once we check the title, the vehicle history, the options and the condition.</p><p class="upd" style="margin-top:10px">If our review changes the value shown here, we’ll tell you the new value and why before we finalize the appraisal. If you choose not to go ahead then, we refund what you paid.</p>'
     : '<p class="upd" style="margin-top:14px">Our appraised value isn’t above the insurer’s value, so the appraisal clause is unlikely to raise your offer. You can still continue if you want a certified appraisal.</p>'}`;
 }
 function startSetup(type, pre) {
@@ -1054,7 +1054,7 @@ const reportErr = (msg, where) => { if (errN++ > 5) return; try { fetch(API, { m
 window.addEventListener('error', (e) => reportErr(e.message, (e.filename || '') + ':' + (e.lineno || '')));
 window.addEventListener('unhandledrejection', (e) => reportErr('promise: ' + ((e.reason && e.reason.message) || e.reason), location.pathname));
 // New version check: when we release, an open page offers a reload (and reloads itself on the claims list or a claim page).
-const APP_V = '30';
+const APP_V = '31';
 async function verCheck() {
   try { const j = await fetch('/version.json', { cache: 'no-store' }).then((r) => r.json()); if (!j || !j.v || j.v === APP_V || $('newv')) return;
     if (!S.setup && !document.querySelector('.sheet,.shotsheet') && !document.activeElement.matches('input,textarea,select')) return location.reload();
