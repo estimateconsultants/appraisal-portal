@@ -373,7 +373,7 @@ function renderSetup() {
       try {
         const j = await call('p2_setup', { setup: { type: s.type, zip: s.zip, answers: s.a, vehicle: s.vehicle, vr: s.vr || '', expect: s.expect && s.expect.value ? { offer: s.expect.offer, value: s.expect.value, id: s.expect.id || '' } : null, accState: DVT[s.type] ? accState().code : '', inv: s.inv || '' } });
         if (!j.ok) { pg.stop(); if (j.reason === 'qualify') return stopScreen(j.why); renderSetup(); toast(j.message || 'Couldn’t save your claim. Try again.'); return; }
-        await pg.done(); S.files = j.files || S.files; S.setup = null; setupSave.del(); S.justSetUp = true; snap.save(); toast(j.existing ? 'This vehicle already has a file. Here it is.' : 'Your claim is set up.'); claim(j.fileId);
+        await pg.done(); S.files = j.files || S.files; S.setup = null; setupSave.del(); S.justSetUp = true; snap.save(); if (!j.existing && window.ecAdLead) window.ecAdLead('portal ' + (s.type || '')); toast(j.existing ? 'This vehicle already has a file. Here it is.' : 'Your claim is set up.'); claim(j.fileId);
       } catch (e) { pg.stop(); renderSetup(); toast('Couldn’t save your claim. Check your connection and try again.'); }
     };
   }
@@ -998,6 +998,8 @@ async function paidBack(fileId, invId, sid) {
   loading('Confirming your payment');
   try { const j = await call('p2_pay_check', { fileId, invId, s: sid }); history.replaceState(null, '', location.pathname + '#' + fileId);
     if (j.files) { S.files = j.files; snap.save(); } else { const m = await call('p2_me'); if (m.ok) { S.account = m.account; S.files = m.files || []; snap.save(); } }
+    // A confirmed payment is counted once for the ad report (the address is cleaned above, so a refresh doesn't count it again).
+    if (j.paid && window.ecAdPurchase) { try { const f0 = (S.files || []).find((f) => f.fileId === fileId), iv = f0 && (f0.invoices || []).find((x) => String(x.id) === String(invId)); const amt = Math.round(Number(iv && iv.cents) || 0) / 100; if (amt > 0) window.ecAdPurchase(invId, amt, 'portal'); } catch (e) {} }
     $('meBtn').hidden = false; claim(fileId); toast(j.paid ? 'Payment received. Thank you. Your receipt is under Payments.' : 'We’re still confirming your payment. It will show here shortly.', 6000);
   } catch (e) { history.replaceState(null, '', location.pathname + '#' + fileId); afterSignIn(); toast('We’re still confirming your payment. It will show here shortly.', 6000); }
 }
@@ -1059,7 +1061,7 @@ const reportErr = (msg, where) => { if (errN++ > 5) return; try { fetch(API, { m
 window.addEventListener('error', (e) => reportErr(e.message, (e.filename || '') + ':' + (e.lineno || '')));
 window.addEventListener('unhandledrejection', (e) => reportErr('promise: ' + ((e.reason && e.reason.message) || e.reason), location.pathname));
 // New version check: when we release, an open page offers a reload (and reloads itself on the claims list or a claim page).
-const APP_V = '33';
+const APP_V = '34';
 async function verCheck() {
   try { const j = await fetch('/version.json', { cache: 'no-store' }).then((r) => r.json()); if (!j || !j.v || j.v === APP_V || $('newv')) return;
     if (!S.setup && !document.querySelector('.sheet,.shotsheet') && !document.activeElement.matches('input,textarea,select')) return location.reload();

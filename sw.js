@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ec-appraisal-portal-v34';
+const CACHE_NAME = 'ec-appraisal-portal-v35';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -6,7 +6,7 @@ const ASSETS_TO_CACHE = [
   '/logo.png',
   '/photo-guide.png',
   '/es.js?v=21',
-  '/app.js?v=33',
+  '/app.js?v=34',
   '/app.css?v=18'
 ];
 
