@@ -141,6 +141,22 @@ function profile() {
 }
 
 // ---------- claim setup ----------
+// Where an appraisal clause claim usually ends up: about 40% to 60% of the way from the insurer's value to ours
+// (the same rule the website's tools use). Rounded to $100. null when our value isn't above theirs.
+function settleRange(offer, value) {
+  offer = Number(offer) || 0; value = Number(value) || 0; const gap = value - offer;
+  if (!(offer > 0) || !(gap > 0)) return null;
+  const r = (x) => Math.round(x / 100) * 100;
+  return { low: r(offer + 0.4 * gap), high: r(offer + 0.6 * gap) };
+}
+const MT_EMBED = 'https://www.estimateconsultants.com/embed/markettrue.html';
+function expectHtml(x) {
+  const rg = settleRange(x.offer, x.value);
+  return `<div class="nums mt"><div><p class="meta">The insurer’s value</p><p class="num">${money(x.offer)}</p><p class="meta">Before tax and fees</p></div><div><p class="meta">Our appraised value</p><p class="num">${money(x.value)}</p><p class="meta">MarketTrue Market Value</p></div>
+  ${rg ? `<div class="wide"><p class="meta">Estimated appraisal clause settlement</p><p class="num">${money(rg.low)} to ${money(rg.high)}</p><p class="meta">Our estimate, not a promise</p></div>` : ''}</div>
+  ${rg ? '<p class="upd" style="margin-top:14px">Under the appraisal clause, each side names an appraiser and the two agree on the value, with an umpire if they can’t. These claims usually end up about 40% to 60% of the way from the insurer’s value to ours. A certified appraisal confirms our value after we review your car’s condition and history.</p>'
+    : '<p class="upd" style="margin-top:14px">Our appraised value isn’t above the insurer’s value, so the appraisal clause is unlikely to raise your offer. You can still continue if you want a certified appraisal.</p>'}`;
+}
 function startSetup(type, pre) {
   pre = pre || {};
   S.setup = { type: type || '', i: 0, a: {}, zip: zipState(pre.zip) ? pre.zip : '', preZip: !!zipState(pre.zip), acc: STATES[pre.acc] ? pre.acc : undefined, preAcc: !!STATES[pre.acc], inv: pre.id || '',
@@ -153,6 +169,7 @@ function questions() {
   const qs = [{ id: 'type' }, { id: 'zip', title: 'What ZIP code is the car insured at?', sub: 'Your policy’s state decides what your own coverage includes.' }];
   if (dv) qs.push({ id: 'acc', title: 'Which state was the accident in?', sub: 'That state’s law sets the deadline and the rules for a claim against the other driver.' });
   qs.push({ id: 'vehicle' });
+  if (s.type === 'tl') qs.push({ id: 'expect' });
   if (dv) qs.push({ id: 'fault', title: 'Who was at fault?', sub: 'Diminished value is claimed from the at-fault driver’s insurer' + (st && st.um !== 'none' ? ', or your own ' + (UNDER_OK[st.code] ? 'uninsured or underinsured' : 'uninsured') + ' motorist coverage in ' + st.n + '.' : '.'), opts: fault },
     { id: 'date', title: 'When was the accident?', sub: acc ? 'In ' + acc.n + ', you generally have ' + acc.dl + ' years from the accident to file suit if the claim isn’t resolved. The insurer may close the claim sooner, so it’s best to start early.' : '' },
     { id: 'prior', title: 'Any earlier accident with structural damage?', sub: 'Before this one: damage to the frame, unibody or other structure. We’ll verify the vehicle’s accident history.', opts: [['No earlier accidents', 'n'], ['An earlier minor accident, no structural damage', 'minor'], ['Yes, an earlier accident with structural damage', 'y'], ['Not sure', 'u']] },
@@ -302,6 +319,35 @@ function renderSetup() {
       if (!v.year) return toast('Check the VIN, or enter the year, make and model.'); if (!v.mileage) return toast('Enter the mileage.');
       const why = vehicleStop(); if (why) return stopScreen(why);
       s.i++; s.dir = ''; renderSetup(); };
+  } else if (q.id === 'expect') {
+    const v = s.vehicle, x = s.expect || {};
+    const next = () => { s.i++; s.dir = ''; renderSetup(); };
+    if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(String(v.vin || '').toUpperCase()) || !v.mileage || !zipState(s.zip)) return s.dir === 'rev' ? (s.i--, renderSetup()) : next();   // nothing to look up with
+    if (x.value) {
+      wrap(`<h1 class="h">Where we’d expect it to settle</h1><p class="lead">${esc(v.desc || 'Your vehicle')}</p>${expectHtml(x)}
+      <button class="btn red mt" type="button" id="go">Continue ${ARROW}</button><p class="mt" style="margin-bottom:0"><button class="link" type="button" id="again">Change the insurer’s value</button></p>`);
+      $('go').onclick = next; $('again').onclick = () => { s.expect = { offer: x.offer }; renderSetup(); };
+    } else if (x.run) {
+      const src = MT_EMBED + '?portal=1&vin=' + encodeURIComponent(String(v.vin).toUpperCase()) + '&miles=' + encodeURIComponent(v.mileage) + '&zip=' + encodeURIComponent(s.zip) + '&offer=' + encodeURIComponent(x.offer);
+      wrap(`<h1 class="h">Our appraised value for your car</h1><p class="lead">From matching cars sold and for sale near you. It usually takes about a minute.</p>
+      <iframe id="mtf" title="MarketTrue Market Value" src="${esc(src)}" style="width:100%;height:520px;border:0;border-radius:12px;margin-top:14px;background:transparent" loading="eager"></iframe>
+      <p class="mt" style="margin-bottom:0"><button class="link" type="button" id="skip">Continue without it</button></p>`);
+      const onMsg = (e) => {
+        if (e.origin !== 'https://www.estimateconsultants.com' || !e.data) return;
+        const f = $('mtf'); if (!f) return window.removeEventListener('message', onMsg);
+        if (e.data.type === 'ec-mt-height' && e.data.height > 200) f.style.height = Math.min(1400, e.data.height + 8) + 'px';
+        if (e.data.type === 'ec-mt-value' && e.data.value > 0) { window.removeEventListener('message', onMsg); s.expect = { offer: x.offer, value: Math.round(e.data.value), id: String(e.data.id || ''), key: String(e.data.key || '') }; setupSave.put(); renderSetup(); }
+      };
+      window.addEventListener('message', onMsg);
+      $('skip').onclick = () => { window.removeEventListener('message', onMsg); s.expect = { offer: x.offer }; next(); };
+    } else {
+      wrap(`<h1 class="h">See where we’d expect it to settle</h1><p class="lead">Before you pay anything, see our appraised value for your car and where an appraisal clause claim like yours usually ends up.</p>
+      <form id="f" class="mt" novalidate><label class="f" for="ov">The insurer’s value for your car</label><input class="in" id="ov" inputmode="numeric" autocomplete="off" placeholder="Before tax and fees" value="${x.offer ? esc(x.offer) : ''}" autofocus>
+      <p class="hint">The vehicle value on their report or offer, before sales tax, fees and your deductible.</p><button class="btn red mt" type="submit">Show me ${ARROW}</button></form>
+      <p class="mt" style="margin-bottom:0"><button class="link" type="button" id="skip">Skip this</button></p>`);
+      $('f').onsubmit = (e) => { e.preventDefault(); const o = Math.round(Number(String($('ov').value).replace(/[^0-9.]/g, '')) || 0); if (o < 500 || o > 1000000) return toast('Enter the insurer’s value for the car.'); s.expect = { offer: o, run: 1 }; s.dir = ''; renderSetup(); };
+      $('skip').onclick = next;
+    }
   } else if (q.id === 'summary') {
     const st = zipState(s.zip), L = s.labels || {}, a = S.account || {};
     const rows = [['Name', a.name], ['Email', a.email], ['Phone', fmtPhone(a.phone)], ['Vehicle', s.vehicle.desc], ['VIN', s.vehicle.vin], ['Mileage', Number(s.vehicle.mileage).toLocaleString('en-US')]]
@@ -309,6 +355,7 @@ function renderSetup() {
     const name = s.type === 'ncdv' ? 'North Carolina diminished value appraisal' : s.type === 'dv' ? 'Diminished value, full service' : s.type === 'dvself' ? 'Diminished value, self-service' : (L.type || '') + ' appraisal';
     wrap(`<h1 class="h">Check your details</h1><p class="lead"><span class="ok">Your claim qualifies</span> for a ${esc(name.charAt(0).toLowerCase() + name.slice(1)).replace(/^north carolina/, 'North Carolina')}.</p>
     <dl class="list sum mt">${rows.map((r) => `<div><dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>
+    ${s.type === 'tl' && s.expect && s.expect.value ? '<h2 class="h2 mt">Where we’d expect it to settle</h2>' + expectHtml(s.expect) : ''}
     ${priceHtml(s.type, !!s.vr)}
     ${DVT[s.type] ? '<p class="note mt-s">Insurers often offer much less than the full diminished value at first. Getting the full amount can mean small claims court. We’ll give you our honest estimate of where it may settle once we’ve done the appraisal.</p>' : ''}
     ${DVT[s.type] && st && st.code === 'MD' && /unins|under/.test(s.a.fault || '') ? '<p class="note mt-s">Maryland: the state insurance department says uninsured and underinsured motorist coverage must pay diminished value, and insurers can’t exclude it (Bulletin 24-8, April 2024).</p>' : ''}
@@ -319,7 +366,7 @@ function renderSetup() {
     $('ok').onclick = async () => {
       const b = $('ok'); busy(b, true); const keep = app.innerHTML; const pg = setupProgress();
       try {
-        const j = await call('p2_setup', { setup: { type: s.type, zip: s.zip, answers: s.a, vehicle: s.vehicle, vr: s.vr || '', accState: DVT[s.type] ? accState().code : '', inv: s.inv || '' } });
+        const j = await call('p2_setup', { setup: { type: s.type, zip: s.zip, answers: s.a, vehicle: s.vehicle, vr: s.vr || '', expect: s.expect && s.expect.value ? { offer: s.expect.offer, value: s.expect.value, id: s.expect.id || '' } : null, accState: DVT[s.type] ? accState().code : '', inv: s.inv || '' } });
         if (!j.ok) { pg.stop(); if (j.reason === 'qualify') return stopScreen(j.why); renderSetup(); toast(j.message || 'Couldn’t save your claim. Try again.'); return; }
         await pg.done(); S.files = j.files || S.files; S.setup = null; setupSave.del(); S.justSetUp = true; snap.save(); toast(j.existing ? 'This vehicle already has a file. Here it is.' : 'Your claim is set up.'); claim(j.fileId);
       } catch (e) { pg.stop(); renderSetup(); toast('Couldn’t save your claim. Check your connection and try again.'); }
@@ -1007,7 +1054,7 @@ const reportErr = (msg, where) => { if (errN++ > 5) return; try { fetch(API, { m
 window.addEventListener('error', (e) => reportErr(e.message, (e.filename || '') + ':' + (e.lineno || '')));
 window.addEventListener('unhandledrejection', (e) => reportErr('promise: ' + ((e.reason && e.reason.message) || e.reason), location.pathname));
 // New version check: when we release, an open page offers a reload (and reloads itself on the claims list or a claim page).
-const APP_V = '29';
+const APP_V = '30';
 async function verCheck() {
   try { const j = await fetch('/version.json', { cache: 'no-store' }).then((r) => r.json()); if (!j || !j.v || j.v === APP_V || $('newv')) return;
     if (!S.setup && !document.querySelector('.sheet,.shotsheet') && !document.activeElement.matches('input,textarea,select')) return location.reload();
