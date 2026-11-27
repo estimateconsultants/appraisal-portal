@@ -274,3 +274,6 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}main{overflow-wrap:anyw
 .exp-note{margin-top:14px;padding:14px 16px;border-left:3px solid var(--green);background:var(--panel);border-radius:0 12px 12px 0}.exp-nt{margin:0 0 4px;font:650 15px var(--body);color:#fff}
 @media (max-width:360px){.exp-val{font-size:40px}.exp-rng{font-size:25px}}
 .exp-row .num.ok{color:var(--green)}
+.exp-set{margin-top:0}.exp-how{margin:16px 0 0;font:600 13px var(--body);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.exp-row .exp-mt{text-align:left;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.exp-row .mtm{gap:7px;margin-bottom:6px}.exp-row .mtm svg{width:26px;height:26px}.exp-row .mtw span{font-size:14px}.exp-row .mtw small{font-size:7px;margin-top:3px;letter-spacing:.3em}
+.exp-gap{margin:10px 0 0;color:var(--soft)}.exp-gap b{color:var(--green)}

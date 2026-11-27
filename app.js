@@ -154,11 +154,11 @@ const MT_MARK = '<span class="mtm"><svg viewBox="0 0 64 64" aria-hidden="true"><
 function expectHtml(x) {
   const rg = settleRange(x.offer, x.value), gap = x.value - x.offer;
   return `<div class="exp">
-  <div class="exp-mt">${MT_MARK}<p class="exp-val">${money(x.value)}</p><p class="meta">Our appraised value</p></div>
-  <div class="exp-row"><div><p class="meta">The insurer’s value</p><p class="num">${money(x.offer)}</p><p class="meta">Before tax and fees</p></div>${gap > 0 ? `<div><p class="meta">Difference</p><p class="num ok">+${money(gap)}</p></div>` : ''}</div>
   ${rg ? `<div class="exp-set"><p class="meta">Estimated appraisal clause settlement</p><p class="exp-rng">${money(rg.low)} to ${money(rg.high)}</p>
     <div class="exp-bar" aria-hidden="true"><i></i></div><div class="exp-ends" aria-hidden="true"><span>${money(x.offer)}</span><span>${money(x.value)}</span></div>
-    <p class="meta">Our estimate, not a promise</p></div>` : ''}</div>
+    <p class="meta">Before tax and fees. Our estimate, not a promise.</p></div><p class="exp-how">The two values it sits between</p>` : ''}
+  <div class="exp-row"><div><p class="meta">The insurer’s value</p><p class="num">${money(x.offer)}</p><p class="meta">Before tax and fees</p></div><div class="exp-mt">${MT_MARK}<p class="num ok">${money(x.value)}</p><p class="meta">Our appraised value, before tax and fees</p></div></div>
+  ${gap > 0 ? `<p class="exp-gap">Our value is <b>${money(gap)}</b> above the insurer’s.</p>` : ''}</div>
   ${rg ? `<p class="upd" style="margin-top:16px">Under the appraisal clause, each side names an appraiser and the two agree on the value, with an umpire if they can’t. These claims usually end up about 40% to 60% of the way from the insurer’s value to ours.</p><p class="upd" style="margin-top:10px">This is our value for a car with a clean title, no earlier accidents or damage, and normal wear. The certified appraisal can come out higher or lower once we check the title, the vehicle history, the options and the condition.</p><div class="exp-note"><p class="exp-nt">If the value changes</p><p class="upd">If our review changes the value shown here, we’ll tell you the new value and why before we finalize the appraisal. If you choose not to go ahead then, we refund what you paid.</p></div>`
     : '<p class="upd" style="margin-top:16px">Our appraised value isn’t above the insurer’s value, so the appraisal clause is unlikely to raise your offer. You can still continue if you want a certified appraisal.</p>'}`;
 }
@@ -329,7 +329,7 @@ function renderSetup() {
     const next = () => { s.i++; s.dir = ''; renderSetup(); };
     if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(String(v.vin || '').toUpperCase()) || !v.mileage || !zipState(s.zip)) return s.dir === 'rev' ? (s.i--, renderSetup()) : next();   // nothing to look up with
     if (x.value) {
-      wrap(`<h1 class="h">Where we’d expect it to settle</h1><p class="lead">${esc(v.desc || 'Your vehicle')}</p>${expectHtml(x)}
+      wrap(`<h1 class="h">${settleRange(x.offer, x.value) ? 'Where we’d expect it to settle' : 'Our appraised value'}</h1><p class="lead">${esc(v.desc || 'Your vehicle')}</p>${expectHtml(x)}
       <button class="btn red mt" type="button" id="go">Continue ${ARROW}</button><p class="mt" style="margin-bottom:0"><button class="link" type="button" id="again">Change the insurer’s value</button></p>`);
       $('go').onclick = next; $('again').onclick = () => { s.expect = { offer: x.offer }; renderSetup(); };
     } else if (x.run) {
@@ -360,7 +360,7 @@ function renderSetup() {
     const name = s.type === 'ncdv' ? 'North Carolina diminished value appraisal' : s.type === 'dv' ? 'Diminished value, full service' : s.type === 'dvself' ? 'Diminished value, self-service' : (L.type || '') + ' appraisal';
     wrap(`<h1 class="h">Check your details</h1><p class="lead"><span class="ok">Your claim qualifies</span> for a ${esc(name.charAt(0).toLowerCase() + name.slice(1)).replace(/^north carolina/, 'North Carolina')}.</p>
     <dl class="list sum mt">${rows.map((r) => `<div><dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>
-    ${s.type === 'tl' && s.expect && s.expect.value ? '<h2 class="h2 mt">Where we’d expect it to settle</h2>' + expectHtml(s.expect) : ''}
+    ${s.type === 'tl' && s.expect && s.expect.value ? '<h2 class="h2 mt">' + (settleRange(s.expect.offer, s.expect.value) ? 'Where we’d expect it to settle' : 'Our appraised value') + '</h2>' + expectHtml(s.expect) : ''}
     ${priceHtml(s.type, !!s.vr)}
     ${DVT[s.type] ? '<p class="note mt-s">Insurers often offer much less than the full diminished value at first. Getting the full amount can mean small claims court. We’ll give you our honest estimate of where it may settle once we’ve done the appraisal.</p>' : ''}
     ${DVT[s.type] && st && st.code === 'MD' && /unins|under/.test(s.a.fault || '') ? '<p class="note mt-s">Maryland: the state insurance department says uninsured and underinsured motorist coverage must pay diminished value, and insurers can’t exclude it (Bulletin 24-8, April 2024).</p>' : ''}
@@ -1059,7 +1059,7 @@ const reportErr = (msg, where) => { if (errN++ > 5) return; try { fetch(API, { m
 window.addEventListener('error', (e) => reportErr(e.message, (e.filename || '') + ':' + (e.lineno || '')));
 window.addEventListener('unhandledrejection', (e) => reportErr('promise: ' + ((e.reason && e.reason.message) || e.reason), location.pathname));
 // New version check: when we release, an open page offers a reload (and reloads itself on the claims list or a claim page).
-const APP_V = '32';
+const APP_V = '33';
 async function verCheck() {
   try { const j = await fetch('/version.json', { cache: 'no-store' }).then((r) => r.json()); if (!j || !j.v || j.v === APP_V || $('newv')) return;
     if (!S.setup && !document.querySelector('.sheet,.shotsheet') && !document.activeElement.matches('input,textarea,select')) return location.reload();
